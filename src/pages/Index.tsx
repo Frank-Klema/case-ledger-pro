@@ -5,12 +5,13 @@ import { CaseList } from '@/components/cases/CaseList';
 import { CaseForm } from '@/components/cases/CaseForm';
 import { CaseDetail } from '@/components/cases/CaseDetail';
 import { ImportDialog } from '@/components/cases/ImportDialog';
+import { CalendarView } from '@/components/calendar/CalendarView';
 import { useCases } from '@/hooks/useCases';
 import { exportToExcel } from '@/lib/excel';
 import { LegalCase, CaseFormData } from '@/types/case';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { LayoutDashboard, List } from 'lucide-react';
+import { LayoutDashboard, List, Calendar } from 'lucide-react';
 
 const Index = () => {
   const { cases, addCase, updateCase, deleteCase, importCases } = useCases();
@@ -107,6 +108,10 @@ const Index = () => {
               <List className="h-4 w-4" />
               All Cases
             </TabsTrigger>
+            <TabsTrigger value="calendar" className="gap-2">
+              <Calendar className="h-4 w-4" />
+              Calendar
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="dashboard" className="animate-fade-in">
@@ -120,6 +125,10 @@ const Index = () => {
               onEdit={handleEditCase}
               onDelete={handleDeleteCase}
             />
+          </TabsContent>
+
+          <TabsContent value="calendar" className="animate-fade-in">
+            <CalendarView cases={cases} onViewCase={handleViewCase} />
           </TabsContent>
         </Tabs>
       </main>

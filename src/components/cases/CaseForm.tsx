@@ -1,6 +1,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { useEffect } from 'react';
 import { CaseFormData, LegalCase } from '@/types/case';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,13 +27,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Separator } from '@/components/ui/separator';
 
 const caseSchema = z.object({
   caseNumber: z.string().min(1, 'Case number is required'),
   title: z.string().min(1, 'Title is required'),
   client: z.string().min(1, 'Client name is required'),
   opposingParty: z.string(),
-  type: z.enum(['civil', 'criminal', 'family', 'corporate', 'property', 'labor', 'other']),
+  type: z.enum(['civil', 'criminal', 'family', 'corporate', 'property', 'labor', 'garnishee', 'other']),
   status: z.enum(['open', 'pending', 'closed', 'archived']),
   priority: z.enum(['low', 'medium', 'high', 'urgent']),
   court: z.string(),
@@ -41,6 +43,12 @@ const caseSchema = z.object({
   nextHearing: z.string(),
   description: z.string(),
   notes: z.string(),
+  garnisheeDetails: z.object({
+    garnisheeCourt: z.string(),
+    representedGarnishee: z.string(),
+    garnisheeComment: z.string(),
+    garnisheeDeadline: z.string(),
+  }).optional(),
 });
 
 interface CaseFormProps {
@@ -68,11 +76,39 @@ export const CaseForm = ({ open, onClose, onSubmit, initialData, mode }: CaseFor
       nextHearing: '',
       description: '',
       notes: '',
+      garnisheeDetails: {
+        garnisheeCourt: '',
+        representedGarnishee: '',
+        garnisheeComment: '',
+        garnisheeDeadline: '',
+      },
     },
   });
 
+  const caseType = form.watch('type');
+  const isGarnishee = caseType === 'garnishee';
+
+  useEffect(() => {
+    if (initialData) {
+      form.reset({
+        ...initialData,
+        garnisheeDetails: initialData.garnisheeDetails || {
+          garnisheeCourt: '',
+          representedGarnishee: '',
+          garnisheeComment: '',
+          garnisheeDeadline: '',
+        },
+      });
+    }
+  }, [initialData, form]);
+
   const handleSubmit = (data: CaseFormData) => {
-    onSubmit(data);
+    // Only include garnishee details if type is garnishee
+    const submitData = {
+      ...data,
+      garnisheeDetails: data.type === 'garnishee' ? data.garnisheeDetails : undefined,
+    };
+    onSubmit(submitData);
     form.reset();
     onClose();
   };
@@ -151,7 +187,7 @@ export const CaseForm = ({ open, onClose, onSubmit, initialData, mode }: CaseFor
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Case Type</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select type" />
@@ -164,6 +200,7 @@ export const CaseForm = ({ open, onClose, onSubmit, initialData, mode }: CaseFor
                         <SelectItem value="corporate">Corporate</SelectItem>
                         <SelectItem value="property">Property</SelectItem>
                         <SelectItem value="labor">Labor</SelectItem>
+                        <SelectItem value="garnishee">Garnishee</SelectItem>
                         <SelectItem value="other">Other</SelectItem>
                       </SelectContent>
                     </Select>
@@ -178,7 +215,7 @@ export const CaseForm = ({ open, onClose, onSubmit, initialData, mode }: CaseFor
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Status</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select status" />
@@ -202,7 +239,7 @@ export const CaseForm = ({ open, onClose, onSubmit, initialData, mode }: CaseFor
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Priority</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select priority" />
@@ -276,6 +313,76 @@ export const CaseForm = ({ open, onClose, onSubmit, initialData, mode }: CaseFor
                 )}
               />
             </div>
+
+            {isGarnishee && (
+              <>
+                <Separator className="my-4" />
+                <div className="space-y-4">
+                  <h3 className="font-heading font-semibold text-accent">Garnishee Details</h3>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <FormField
+                      control={form.control}
+                      name="garnisheeDetails.garnisheeCourt"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Garnishee Court</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Garnishee court name" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="garnisheeDetails.representedGarnishee"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Represented Garnishee</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Name of represented garnishee" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="garnisheeDetails.garnisheeDeadline"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Garnishee Deadline</FormLabel>
+                          <FormControl>
+                            <Input type="date" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <FormField
+                    control={form.control}
+                    name="garnisheeDetails.garnisheeComment"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Garnishee Comment</FormLabel>
+                        <FormControl>
+                          <Textarea 
+                            placeholder="Additional comments about the garnishee proceeding..." 
+                            className="min-h-[80px]"
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </>
+            )}
 
             <FormField
               control={form.control}

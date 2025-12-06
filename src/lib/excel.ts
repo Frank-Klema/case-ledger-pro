@@ -16,6 +16,11 @@ export const exportToExcel = (cases: LegalCase[], filename: string = 'legal_case
     'Next Hearing': c.nextHearing,
     'Description': c.description,
     'Notes': c.notes,
+    // Garnishee fields
+    'Garnishee Court': c.garnisheeDetails?.garnisheeCourt || '',
+    'Represented Garnishee': c.garnisheeDetails?.representedGarnishee || '',
+    'Garnishee Comment': c.garnisheeDetails?.garnisheeComment || '',
+    'Garnishee Deadline': c.garnisheeDetails?.garnisheeDeadline || '',
     'Created At': c.createdAt,
     'Updated At': c.updatedAt,
   }));
@@ -35,7 +40,7 @@ export const exportToExcel = (cases: LegalCase[], filename: string = 'legal_case
 };
 
 const validateCaseType = (value: string): CaseType => {
-  const types: CaseType[] = ['civil', 'criminal', 'family', 'corporate', 'property', 'labor', 'other'];
+  const types: CaseType[] = ['civil', 'criminal', 'family', 'corporate', 'property', 'labor', 'garnishee', 'other'];
   const normalized = value?.toLowerCase().trim();
   return types.includes(normalized as CaseType) ? (normalized as CaseType) : 'other';
 };
@@ -64,21 +69,32 @@ export const importFromExcel = (file: File): Promise<CaseFormData[]> => {
         const worksheet = workbook.Sheets[sheetName];
         const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
-        const cases: CaseFormData[] = jsonData.map((row: any) => ({
-          caseNumber: String(row['Case Number'] || row['caseNumber'] || ''),
-          title: String(row['Title'] || row['title'] || ''),
-          client: String(row['Client'] || row['client'] || ''),
-          opposingParty: String(row['Opposing Party'] || row['opposingParty'] || ''),
-          type: validateCaseType(row['Type'] || row['type'] || ''),
-          status: validateStatus(row['Status'] || row['status'] || ''),
-          priority: validatePriority(row['Priority'] || row['priority'] || ''),
-          court: String(row['Court'] || row['court'] || ''),
-          judge: String(row['Judge'] || row['judge'] || ''),
-          filingDate: String(row['Filing Date'] || row['filingDate'] || ''),
-          nextHearing: String(row['Next Hearing'] || row['nextHearing'] || ''),
-          description: String(row['Description'] || row['description'] || ''),
-          notes: String(row['Notes'] || row['notes'] || ''),
-        }));
+        const cases: CaseFormData[] = jsonData.map((row: any) => {
+          const caseType = validateCaseType(row['Type'] || row['type'] || '');
+          
+          return {
+            caseNumber: String(row['Case Number'] || row['caseNumber'] || ''),
+            title: String(row['Title'] || row['title'] || ''),
+            client: String(row['Client'] || row['client'] || ''),
+            opposingParty: String(row['Opposing Party'] || row['opposingParty'] || ''),
+            type: caseType,
+            status: validateStatus(row['Status'] || row['status'] || ''),
+            priority: validatePriority(row['Priority'] || row['priority'] || ''),
+            court: String(row['Court'] || row['court'] || ''),
+            judge: String(row['Judge'] || row['judge'] || ''),
+            filingDate: String(row['Filing Date'] || row['filingDate'] || ''),
+            nextHearing: String(row['Next Hearing'] || row['nextHearing'] || ''),
+            description: String(row['Description'] || row['description'] || ''),
+            notes: String(row['Notes'] || row['notes'] || ''),
+            // Garnishee fields (only if type is garnishee)
+            garnisheeDetails: caseType === 'garnishee' ? {
+              garnisheeCourt: String(row['Garnishee Court'] || row['garnisheeCourt'] || ''),
+              representedGarnishee: String(row['Represented Garnishee'] || row['representedGarnishee'] || ''),
+              garnisheeComment: String(row['Garnishee Comment'] || row['garnisheeComment'] || ''),
+              garnisheeDeadline: String(row['Garnishee Deadline'] || row['garnisheeDeadline'] || ''),
+            } : undefined,
+          };
+        });
 
         resolve(cases);
       } catch (error) {
@@ -92,21 +108,46 @@ export const importFromExcel = (file: File): Promise<CaseFormData[]> => {
 };
 
 export const downloadTemplate = () => {
-  const templateData = [{
-    'Case Number': 'CASE-2024-001',
-    'Title': 'Sample Case Title',
-    'Client': 'John Doe',
-    'Opposing Party': 'Jane Smith',
-    'Type': 'civil',
-    'Status': 'open',
-    'Priority': 'medium',
-    'Court': 'District Court',
-    'Judge': 'Hon. Judge Name',
-    'Filing Date': '2024-01-15',
-    'Next Hearing': '2024-02-15',
-    'Description': 'Brief description of the case',
-    'Notes': 'Additional notes',
-  }];
+  const templateData = [
+    {
+      'Case Number': 'CASE-2024-001',
+      'Title': 'Sample Civil Case',
+      'Client': 'John Doe',
+      'Opposing Party': 'Jane Smith',
+      'Type': 'civil',
+      'Status': 'open',
+      'Priority': 'medium',
+      'Court': 'District Court',
+      'Judge': 'Hon. Judge Name',
+      'Filing Date': '2024-01-15',
+      'Next Hearing': '2024-02-15',
+      'Description': 'Brief description of the case',
+      'Notes': 'Additional notes',
+      'Garnishee Court': '',
+      'Represented Garnishee': '',
+      'Garnishee Comment': '',
+      'Garnishee Deadline': '',
+    },
+    {
+      'Case Number': 'GARN-2024-001',
+      'Title': 'Sample Garnishee Proceeding',
+      'Client': 'ABC Company',
+      'Opposing Party': 'XYZ Corp',
+      'Type': 'garnishee',
+      'Status': 'pending',
+      'Priority': 'high',
+      'Court': 'High Court',
+      'Judge': 'Hon. Judge Name',
+      'Filing Date': '2024-01-20',
+      'Next Hearing': '2024-03-01',
+      'Description': 'Garnishee proceeding description',
+      'Notes': 'Case notes',
+      'Garnishee Court': 'Commercial Court',
+      'Represented Garnishee': 'Third Party Bank',
+      'Garnishee Comment': 'Awaiting bank response on funds held',
+      'Garnishee Deadline': '2024-02-28',
+    }
+  ];
 
   const worksheet = XLSX.utils.json_to_sheet(templateData);
   const workbook = XLSX.utils.book_new();
