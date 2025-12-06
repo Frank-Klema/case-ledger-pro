@@ -1,13 +1,14 @@
 import { LegalCase } from '@/types/case';
 import { CaseStatusBadge, CasePriorityBadge } from './CaseStatusBadge';
 import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Calendar, User, Users, Building, Scale, FileText } from 'lucide-react';
+import { Calendar, User, Users, Building, Scale, FileText, Gavel, Clock, MessageSquare } from 'lucide-react';
 
 interface CaseDetailProps {
   open: boolean;
@@ -18,6 +19,8 @@ interface CaseDetailProps {
 
 export const CaseDetail = ({ open, onClose, caseItem, onEdit }: CaseDetailProps) => {
   if (!caseItem) return null;
+
+  const isGarnishee = caseItem.type === 'garnishee';
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -97,6 +100,59 @@ export const CaseDetail = ({ open, onClose, caseItem, onEdit }: CaseDetailProps)
             </div>
             <p className="capitalize">{caseItem.type}</p>
           </div>
+
+          {isGarnishee && caseItem.garnisheeDetails && (
+            <>
+              <Separator />
+              <div className="space-y-4">
+                <h3 className="font-heading font-semibold text-accent flex items-center gap-2">
+                  <Gavel className="h-4 w-4" />
+                  Garnishee Details
+                </h3>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="flex items-start gap-3 p-3 rounded-lg bg-accent/10">
+                    <Building className="h-5 w-5 text-accent mt-0.5" />
+                    <div>
+                      <p className="text-sm text-muted-foreground">Garnishee Court</p>
+                      <p className="font-medium">{caseItem.garnisheeDetails.garnisheeCourt || '-'}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3 p-3 rounded-lg bg-accent/10">
+                    <User className="h-5 w-5 text-accent mt-0.5" />
+                    <div>
+                      <p className="text-sm text-muted-foreground">Represented Garnishee</p>
+                      <p className="font-medium">{caseItem.garnisheeDetails.representedGarnishee || '-'}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3 p-3 rounded-lg bg-accent/10">
+                    <Clock className="h-5 w-5 text-accent mt-0.5" />
+                    <div>
+                      <p className="text-sm text-muted-foreground">Garnishee Deadline</p>
+                      <p className="font-medium text-accent">
+                        {caseItem.garnisheeDetails.garnisheeDeadline 
+                          ? new Date(caseItem.garnisheeDetails.garnisheeDeadline).toLocaleDateString() 
+                          : '-'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {caseItem.garnisheeDetails.garnisheeComment && (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <MessageSquare className="h-4 w-4 text-accent" />
+                      <p className="text-sm font-medium text-muted-foreground">Garnishee Comment</p>
+                    </div>
+                    <p className="text-sm leading-relaxed whitespace-pre-wrap bg-accent/10 p-3 rounded-lg">
+                      {caseItem.garnisheeDetails.garnisheeComment}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
 
           {caseItem.description && (
             <div className="space-y-2">
