@@ -1,5 +1,6 @@
 import { Scale, FileSpreadsheet, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { SettingsDialog } from '@/components/settings/SettingsDialog';
 
 interface HeaderProps {
   onAddCase: () => void;
@@ -22,6 +23,7 @@ export const Header = ({ onAddCase, onExport, onImport }: HeaderProps) => {
         </div>
 
         <div className="flex items-center gap-2">
+          <SettingsDialog />
           <Button variant="outline" size="sm" onClick={onImport}>
             <FileSpreadsheet className="h-4 w-4" />
             Import
