@@ -7,6 +7,7 @@ interface StatsCardProps {
   icon: LucideIcon;
   trend?: string;
   variant?: 'default' | 'primary' | 'success' | 'warning' | 'destructive';
+  onClick?: () => void;
 }
 
 const variantStyles = {
@@ -25,12 +26,16 @@ const iconStyles = {
   destructive: 'bg-destructive/10 text-destructive',
 };
 
-export const StatsCard = ({ title, value, icon: Icon, trend, variant = 'default' }: StatsCardProps) => {
+export const StatsCard = ({ title, value, icon: Icon, trend, variant = 'default', onClick }: StatsCardProps) => {
   return (
-    <div className={cn(
-      "rounded-xl border p-5 shadow-sm transition-all duration-200 hover:shadow-md animate-fade-in",
-      variantStyles[variant]
-    )}>
+    <div 
+      onClick={onClick}
+      className={cn(
+        "rounded-xl border p-5 shadow-sm transition-all duration-200 hover:shadow-md animate-fade-in",
+        variantStyles[variant],
+        onClick && "cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
+      )}
+    >
       <div className="flex items-start justify-between">
         <div>
           <p className="text-sm font-medium text-muted-foreground">{title}</p>
