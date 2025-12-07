@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Header } from '@/components/layout/Header';
-import { Dashboard } from '@/components/dashboard/Dashboard';
+import { Dashboard, DashboardFilter } from '@/components/dashboard/Dashboard';
 import { CaseList } from '@/components/cases/CaseList';
 import { CaseForm } from '@/components/cases/CaseForm';
 import { CaseDetail } from '@/components/cases/CaseDetail';
@@ -22,6 +22,8 @@ const Index = () => {
   const [importOpen, setImportOpen] = useState(false);
   const [selectedCase, setSelectedCase] = useState<LegalCase | null>(null);
   const [formMode, setFormMode] = useState<'add' | 'edit'>('add');
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const [dashboardFilter, setDashboardFilter] = useState<DashboardFilter>('all');
 
   const handleAddCase = () => {
     setSelectedCase(null);
@@ -46,6 +48,14 @@ const Index = () => {
     toast({
       title: "Case Deleted",
       description: "The case has been successfully deleted.",
+    });
+  };
+
+  const handleBatchDelete = (ids: string[]) => {
+    ids.forEach(id => deleteCase(id));
+    toast({
+      title: "Cases Deleted",
+      description: `${ids.length} cases have been successfully deleted.`,
     });
   };
 
@@ -89,6 +99,11 @@ const Index = () => {
     });
   };
 
+  const handleDashboardFilterSelect = (filter: DashboardFilter) => {
+    setDashboardFilter(filter);
+    setActiveTab('cases');
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Header 
@@ -98,7 +113,7 @@ const Index = () => {
       />
 
       <main className="container py-6">
-        <Tabs defaultValue="dashboard" className="space-y-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="bg-muted/50">
             <TabsTrigger value="dashboard" className="gap-2">
               <LayoutDashboard className="h-4 w-4" />
@@ -115,7 +130,7 @@ const Index = () => {
           </TabsList>
 
           <TabsContent value="dashboard" className="animate-fade-in">
-            <Dashboard cases={cases} />
+            <Dashboard cases={cases} onFilterSelect={handleDashboardFilterSelect} />
           </TabsContent>
 
           <TabsContent value="cases" className="animate-fade-in">
@@ -124,6 +139,8 @@ const Index = () => {
               onView={handleViewCase}
               onEdit={handleEditCase}
               onDelete={handleDeleteCase}
+              onBatchDelete={handleBatchDelete}
+              initialFilter={dashboardFilter}
             />
           </TabsContent>
 

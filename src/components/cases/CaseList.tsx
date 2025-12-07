@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Search, Filter, MoreVertical, Eye, Pencil, Trash2 } from 'lucide-react';
 import { LegalCase, CaseStatus, CaseType } from '@/types/case';
 import { CaseStatusBadge, CasePriorityBadge } from './CaseStatusBadge';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select,
   SelectContent,
@@ -25,18 +26,50 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { DashboardFilter } from '@/components/dashboard/Dashboard';
 
 interface CaseListProps {
   cases: LegalCase[];
   onView: (caseItem: LegalCase) => void;
   onEdit: (caseItem: LegalCase) => void;
   onDelete: (id: string) => void;
+  onBatchDelete?: (ids: string[]) => void;
+  initialFilter?: DashboardFilter;
 }
 
-export const CaseList = ({ cases, onView, onEdit, onDelete }: CaseListProps) => {
+export const CaseList = ({ cases, onView, onEdit, onDelete, onBatchDelete, initialFilter }: CaseListProps) => {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<CaseStatus | 'all'>('all');
   const [typeFilter, setTypeFilter] = useState<CaseType | 'all'>('all');
+  const [priorityFilter, setPriorityFilter] = useState<'all' | 'urgent'>('all');
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+
+  // Apply initial filter from dashboard
+  useEffect(() => {
+    if (initialFilter) {
+      if (initialFilter === 'all') {
+        setStatusFilter('all');
+        setPriorityFilter('all');
+      } else if (initialFilter === 'urgent') {
+        setStatusFilter('all');
+        setPriorityFilter('urgent');
+      } else {
+        setStatusFilter(initialFilter);
+        setPriorityFilter('all');
+      }
+    }
+  }, [initialFilter]);
 
   const filteredCases = cases.filter(c => {
     const matchesSearch = 
@@ -45,8 +78,39 @@ export const CaseList = ({ cases, onView, onEdit, onDelete }: CaseListProps) => 
       c.client.toLowerCase().includes(search.toLowerCase());
     const matchesStatus = statusFilter === 'all' || c.status === statusFilter;
     const matchesType = typeFilter === 'all' || c.type === typeFilter;
-    return matchesSearch && matchesStatus && matchesType;
+    const matchesPriority = priorityFilter === 'all' || c.priority === priorityFilter;
+    return matchesSearch && matchesStatus && matchesType && matchesPriority;
   });
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filteredCases.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredCases.map(c => c.id)));
+    }
+  };
+
+  const toggleSelect = (id: string) => {
+    const newSelected = new Set(selectedIds);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedIds(newSelected);
+  };
+
+  const handleBatchDelete = () => {
+    if (onBatchDelete) {
+      onBatchDelete(Array.from(selectedIds));
+    } else {
+      selectedIds.forEach(id => onDelete(id));
+    }
+    setSelectedIds(new Set());
+    setDeleteDialogOpen(false);
+  };
+
+  const allSelected = filteredCases.length > 0 && selectedIds.size === filteredCases.length;
 
   return (
     <div className="space-y-4 animate-fade-in">
@@ -60,7 +124,17 @@ export const CaseList = ({ cases, onView, onEdit, onDelete }: CaseListProps) => 
             className="pl-10"
           />
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          {selectedIds.size > 0 && (
+            <Button 
+              variant="destructive" 
+              size="sm"
+              onClick={() => setDeleteDialogOpen(true)}
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete {selectedIds.size} selected
+            </Button>
+          )}
           <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as CaseStatus | 'all')}>
             <SelectTrigger className="w-[130px]">
               <Filter className="mr-2 h-4 w-4" />
@@ -86,6 +160,7 @@ export const CaseList = ({ cases, onView, onEdit, onDelete }: CaseListProps) => 
               <SelectItem value="corporate">Corporate</SelectItem>
               <SelectItem value="property">Property</SelectItem>
               <SelectItem value="labor">Labor</SelectItem>
+              <SelectItem value="garnishee">Garnishee</SelectItem>
               <SelectItem value="other">Other</SelectItem>
             </SelectContent>
           </Select>
@@ -96,6 +171,13 @@ export const CaseList = ({ cases, onView, onEdit, onDelete }: CaseListProps) => 
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/50">
+              <TableHead className="w-[50px]">
+                <Checkbox 
+                  checked={allSelected}
+                  onCheckedChange={toggleSelectAll}
+                  aria-label="Select all"
+                />
+              </TableHead>
               <TableHead className="font-semibold">Case Number</TableHead>
               <TableHead className="font-semibold">Title</TableHead>
               <TableHead className="font-semibold">Client</TableHead>
@@ -109,13 +191,23 @@ export const CaseList = ({ cases, onView, onEdit, onDelete }: CaseListProps) => 
           <TableBody>
             {filteredCases.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="h-32 text-center text-muted-foreground">
+                <TableCell colSpan={9} className="h-32 text-center text-muted-foreground">
                   {cases.length === 0 ? 'No cases yet. Add your first case to get started.' : 'No cases match your filters.'}
                 </TableCell>
               </TableRow>
             ) : (
               filteredCases.map((caseItem) => (
-                <TableRow key={caseItem.id} className="hover:bg-muted/30 transition-colors">
+                <TableRow 
+                  key={caseItem.id} 
+                  className={`hover:bg-muted/30 transition-colors ${selectedIds.has(caseItem.id) ? 'bg-muted/40' : ''}`}
+                >
+                  <TableCell>
+                    <Checkbox 
+                      checked={selectedIds.has(caseItem.id)}
+                      onCheckedChange={() => toggleSelect(caseItem.id)}
+                      aria-label={`Select ${caseItem.title}`}
+                    />
+                  </TableCell>
                   <TableCell className="font-medium text-accent">{caseItem.caseNumber}</TableCell>
                   <TableCell className="font-medium">{caseItem.title}</TableCell>
                   <TableCell>{caseItem.client}</TableCell>
@@ -160,7 +252,25 @@ export const CaseList = ({ cases, onView, onEdit, onDelete }: CaseListProps) => 
 
       <p className="text-sm text-muted-foreground">
         Showing {filteredCases.length} of {cases.length} cases
+        {selectedIds.size > 0 && ` • ${selectedIds.size} selected`}
       </p>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {selectedIds.size} cases?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the selected cases.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleBatchDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
