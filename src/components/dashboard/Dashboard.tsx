@@ -1,14 +1,33 @@
+/**
+ * @fileoverview Dashboard component displaying case statistics and overview.
+ * Provides a quick summary of case counts, upcoming hearings, and visual charts.
+ */
+
 import { Briefcase, Clock, CheckCircle, AlertTriangle, Hourglass } from 'lucide-react';
 import { StatsCard } from './StatsCard';
+import { CaseStatusChart } from './CaseStatusChart';
 import { LegalCase } from '@/types/case';
 
+/** Filter options for the dashboard stats cards */
 export type DashboardFilter = 'all' | 'open' | 'pending' | 'closed' | 'urgent';
 
+/**
+ * Props for the Dashboard component.
+ */
 interface DashboardProps {
+  /** Array of all legal cases */
   cases: LegalCase[];
+  /** Callback when a filter card is clicked */
   onFilterSelect?: (filter: DashboardFilter) => void;
 }
 
+/**
+ * Main dashboard component showing case statistics and overview.
+ * Displays stats cards, upcoming hearings, pending cases, and status chart.
+ * 
+ * @param props - Component props
+ * @returns JSX element with the complete dashboard layout
+ */
 export const Dashboard = ({ cases, onFilterSelect }: DashboardProps) => {
   const stats = {
     total: cases.length,
@@ -67,7 +86,9 @@ export const Dashboard = ({ cases, onFilterSelect }: DashboardProps) => {
         />
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      {/* Secondary grid: Upcoming hearings, pending cases, and status chart */}
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Upcoming Hearings Panel */}
         {upcomingHearings.length > 0 && (
           <div className="rounded-xl border border-border bg-card p-5 shadow-sm animate-slide-up">
             <h3 className="font-heading text-lg font-semibold text-foreground mb-4">Upcoming Hearings</h3>
@@ -88,6 +109,7 @@ export const Dashboard = ({ cases, onFilterSelect }: DashboardProps) => {
           </div>
         )}
 
+        {/* Pending Cases Panel */}
         {pendingCases.length > 0 && (
           <div className="rounded-xl border border-border bg-card p-5 shadow-sm animate-slide-up">
             <h3 className="font-heading text-lg font-semibold text-foreground mb-4">Pending Cases</h3>
@@ -107,6 +129,12 @@ export const Dashboard = ({ cases, onFilterSelect }: DashboardProps) => {
             </div>
           </div>
         )}
+
+        {/* Case Status Distribution Chart */}
+        <div className="rounded-xl border border-border bg-card p-5 shadow-sm animate-slide-up">
+          <h3 className="font-heading text-lg font-semibold text-foreground mb-4">Case Status Distribution</h3>
+          <CaseStatusChart cases={cases} />
+        </div>
       </div>
     </div>
   );

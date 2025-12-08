@@ -1,7 +1,21 @@
+/**
+ * @fileoverview Excel import/export utilities for legal case management.
+ * Provides functions for exporting cases to Excel, importing from Excel files,
+ * and downloading a template file.
+ */
+
 import * as XLSX from 'xlsx';
 import { LegalCase, CaseFormData, CaseType, CaseStatus, CasePriority } from '@/types/case';
 
+/**
+ * Exports an array of legal cases to an Excel file.
+ * Creates a formatted worksheet with all case fields including garnishee details.
+ * 
+ * @param cases - Array of legal cases to export
+ * @param filename - Base filename for the export (defaults to 'legal_cases')
+ */
 export const exportToExcel = (cases: LegalCase[], filename: string = 'legal_cases') => {
+  // Transform case data to spreadsheet-friendly format
   const exportData = cases.map(c => ({
     'Case Number': c.caseNumber,
     'Title': c.title,
@@ -16,7 +30,8 @@ export const exportToExcel = (cases: LegalCase[], filename: string = 'legal_case
     'Next Hearing': c.nextHearing,
     'Description': c.description,
     'Notes': c.notes,
-    // Garnishee fields
+    'Judgment Collected': c.judgmentCollected ? 'Yes' : 'No',
+    // Garnishee-specific fields
     'Garnishee Court': c.garnisheeDetails?.garnisheeCourt || '',
     'Represented Garnishee': c.garnisheeDetails?.representedGarnishee || '',
     'Garnishee Comment': c.garnisheeDetails?.garnisheeComment || '',
@@ -25,38 +40,80 @@ export const exportToExcel = (cases: LegalCase[], filename: string = 'legal_case
     'Updated At': c.updatedAt,
   }));
 
+  // Create worksheet from data
   const worksheet = XLSX.utils.json_to_sheet(exportData);
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, 'Cases');
 
-  // Auto-size columns
+  // Auto-size columns for better readability
   const maxWidth = 50;
   const colWidths = Object.keys(exportData[0] || {}).map(key => ({
     wch: Math.min(maxWidth, Math.max(key.length, ...exportData.map(row => String(row[key as keyof typeof row] || '').length)))
   }));
   worksheet['!cols'] = colWidths;
 
+  // Write file with date-stamped filename
   XLSX.writeFile(workbook, `${filename}_${new Date().toISOString().split('T')[0]}.xlsx`);
 };
 
+/**
+ * Validates and normalizes a case type value.
+ * Returns 'other' if the value doesn't match any valid type.
+ * 
+ * @param value - Raw case type string from import
+ * @returns Valid CaseType value
+ */
 const validateCaseType = (value: string): CaseType => {
   const types: CaseType[] = ['civil', 'criminal', 'family', 'corporate', 'property', 'labor', 'garnishee', 'other'];
   const normalized = value?.toLowerCase().trim();
   return types.includes(normalized as CaseType) ? (normalized as CaseType) : 'other';
 };
 
+/**
+ * Validates and normalizes a case status value.
+ * Returns 'open' if the value doesn't match any valid status.
+ * 
+ * @param value - Raw status string from import
+ * @returns Valid CaseStatus value
+ */
 const validateStatus = (value: string): CaseStatus => {
   const statuses: CaseStatus[] = ['open', 'pending', 'closed', 'archived'];
   const normalized = value?.toLowerCase().trim();
   return statuses.includes(normalized as CaseStatus) ? (normalized as CaseStatus) : 'open';
 };
 
+/**
+ * Validates and normalizes a priority value.
+ * Returns 'medium' if the value doesn't match any valid priority.
+ * 
+ * @param value - Raw priority string from import
+ * @returns Valid CasePriority value
+ */
 const validatePriority = (value: string): CasePriority => {
   const priorities: CasePriority[] = ['low', 'medium', 'high', 'urgent'];
   const normalized = value?.toLowerCase().trim();
   return priorities.includes(normalized as CasePriority) ? (normalized as CasePriority) : 'medium';
 };
 
+/**
+ * Validates and normalizes a boolean value from import.
+ * Accepts 'yes', 'true', '1' as true values.
+ * 
+ * @param value - Raw boolean string from import
+ * @returns Boolean value
+ */
+const validateBoolean = (value: string): boolean => {
+  const normalized = String(value || '').toLowerCase().trim();
+  return ['yes', 'true', '1'].includes(normalized);
+};
+
+/**
+ * Imports legal cases from an Excel file.
+ * Parses the file and validates all fields according to expected types.
+ * 
+ * @param file - Excel file to import
+ * @returns Promise resolving to array of CaseFormData objects
+ */
 export const importFromExcel = (file: File): Promise<CaseFormData[]> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -69,6 +126,7 @@ export const importFromExcel = (file: File): Promise<CaseFormData[]> => {
         const worksheet = workbook.Sheets[sheetName];
         const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
+        // Map each row to a CaseFormData object with validation
         const cases: CaseFormData[] = jsonData.map((row: any) => {
           const caseType = validateCaseType(row['Type'] || row['type'] || '');
           
@@ -86,7 +144,8 @@ export const importFromExcel = (file: File): Promise<CaseFormData[]> => {
             nextHearing: String(row['Next Hearing'] || row['nextHearing'] || ''),
             description: String(row['Description'] || row['description'] || ''),
             notes: String(row['Notes'] || row['notes'] || ''),
-            // Garnishee fields (only if type is garnishee)
+            judgmentCollected: validateBoolean(row['Judgment Collected'] || row['judgmentCollected'] || ''),
+            // Garnishee fields (only populated if type is garnishee)
             garnisheeDetails: caseType === 'garnishee' ? {
               garnisheeCourt: String(row['Garnishee Court'] || row['garnisheeCourt'] || ''),
               representedGarnishee: String(row['Represented Garnishee'] || row['representedGarnishee'] || ''),
@@ -107,6 +166,11 @@ export const importFromExcel = (file: File): Promise<CaseFormData[]> => {
   });
 };
 
+/**
+ * Downloads a template Excel file for case imports.
+ * Contains sample data demonstrating the expected format for both
+ * regular cases and garnishee proceedings.
+ */
 export const downloadTemplate = () => {
   const templateData = [
     {
@@ -123,6 +187,7 @@ export const downloadTemplate = () => {
       'Next Hearing': '2024-02-15',
       'Description': 'Brief description of the case',
       'Notes': 'Additional notes',
+      'Judgment Collected': 'No',
       'Garnishee Court': '',
       'Represented Garnishee': '',
       'Garnishee Comment': '',
@@ -142,6 +207,7 @@ export const downloadTemplate = () => {
       'Next Hearing': '2024-03-01',
       'Description': 'Garnishee proceeding description',
       'Notes': 'Case notes',
+      'Judgment Collected': 'Yes',
       'Garnishee Court': 'Commercial Court',
       'Represented Garnishee': 'Third Party Bank',
       'Garnishee Comment': 'Awaiting bank response on funds held',

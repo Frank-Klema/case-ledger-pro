@@ -1,3 +1,8 @@
+/**
+ * @fileoverview Case form component for creating and editing legal cases.
+ * Provides a comprehensive form with validation for all case fields.
+ */
+
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -28,7 +33,12 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
+import { Switch } from '@/components/ui/switch';
 
+/**
+ * Zod schema for case form validation.
+ * Defines required and optional fields with their validation rules.
+ */
 const caseSchema = z.object({
   caseNumber: z.string().min(1, 'Case number is required'),
   title: z.string().min(1, 'Title is required'),
@@ -43,6 +53,7 @@ const caseSchema = z.object({
   nextHearing: z.string(),
   description: z.string(),
   notes: z.string(),
+  judgmentCollected: z.boolean(),
   garnisheeDetails: z.object({
     garnisheeCourt: z.string(),
     representedGarnishee: z.string(),
@@ -51,14 +62,29 @@ const caseSchema = z.object({
   }).optional(),
 });
 
+/**
+ * Props for the CaseForm component.
+ */
 interface CaseFormProps {
+  /** Whether the form dialog is open */
   open: boolean;
+  /** Callback to close the form */
   onClose: () => void;
+  /** Callback when form is submitted with valid data */
   onSubmit: (data: CaseFormData) => void;
+  /** Initial data for editing an existing case */
   initialData?: LegalCase;
+  /** Whether adding a new case or editing existing */
   mode: 'add' | 'edit';
 }
 
+/**
+ * Form dialog for creating or editing legal cases.
+ * Includes validation, conditional garnishee fields, and all case properties.
+ * 
+ * @param props - Component props
+ * @returns JSX element with the case form dialog
+ */
 export const CaseForm = ({ open, onClose, onSubmit, initialData, mode }: CaseFormProps) => {
   const form = useForm<CaseFormData>({
     resolver: zodResolver(caseSchema),
@@ -76,6 +102,7 @@ export const CaseForm = ({ open, onClose, onSubmit, initialData, mode }: CaseFor
       nextHearing: '',
       description: '',
       notes: '',
+      judgmentCollected: false,
       garnisheeDetails: {
         garnisheeCourt: '',
         representedGarnishee: '',
@@ -88,10 +115,12 @@ export const CaseForm = ({ open, onClose, onSubmit, initialData, mode }: CaseFor
   const caseType = form.watch('type');
   const isGarnishee = caseType === 'garnishee';
 
+  // Reset form when initialData changes (e.g., when editing different case)
   useEffect(() => {
     if (initialData) {
       form.reset({
         ...initialData,
+        judgmentCollected: initialData.judgmentCollected ?? false,
         garnisheeDetails: initialData.garnisheeDetails || {
           garnisheeCourt: '',
           representedGarnishee: '',
@@ -313,6 +342,28 @@ export const CaseForm = ({ open, onClose, onSubmit, initialData, mode }: CaseFor
                 )}
               />
             </div>
+
+            {/* Judgment Collection Status */}
+            <FormField
+              control={form.control}
+              name="judgmentCollected"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border border-border p-4">
+                  <div className="space-y-0.5">
+                    <FormLabel className="text-base">Judgment/Order Collected</FormLabel>
+                    <p className="text-sm text-muted-foreground">
+                      Mark if copy of judgment or court order has been collected
+                    </p>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
 
             {isGarnishee && (
               <>
