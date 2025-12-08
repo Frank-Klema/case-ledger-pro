@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Header } from '@/components/layout/Header';
 import { Dashboard, DashboardFilter } from '@/components/dashboard/Dashboard';
 import { CaseList } from '@/components/cases/CaseList';
+import { BinList } from '@/components/cases/BinList';
 import { CaseForm } from '@/components/cases/CaseForm';
 import { CaseDetail } from '@/components/cases/CaseDetail';
 import { ImportDialog } from '@/components/cases/ImportDialog';
@@ -11,10 +12,21 @@ import { exportToExcel } from '@/lib/excel';
 import { LegalCase, CaseFormData } from '@/types/case';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { LayoutDashboard, List, Calendar } from 'lucide-react';
+import { LayoutDashboard, List, Calendar, Trash2 } from 'lucide-react';
 
 const Index = () => {
-  const { cases, addCase, updateCase, deleteCase, importCases } = useCases();
+  const { 
+    cases, 
+    deletedCases,
+    addCase, 
+    updateCase, 
+    deleteCase, 
+    restoreCase,
+    permanentDeleteCase,
+    emptyBin,
+    restoreAllFromBin,
+    importCases 
+  } = useCases();
   const { toast } = useToast();
   
   const [formOpen, setFormOpen] = useState(false);
@@ -46,16 +58,48 @@ const Index = () => {
   const handleDeleteCase = (id: string) => {
     deleteCase(id);
     toast({
-      title: "Case Deleted",
-      description: "The case has been successfully deleted.",
+      title: "Moved to Bin",
+      description: "The case has been moved to the bin.",
     });
   };
 
   const handleBatchDelete = (ids: string[]) => {
     ids.forEach(id => deleteCase(id));
     toast({
-      title: "Cases Deleted",
-      description: `${ids.length} cases have been successfully deleted.`,
+      title: "Moved to Bin",
+      description: `${ids.length} cases have been moved to the bin.`,
+    });
+  };
+
+  const handleRestoreCase = (id: string) => {
+    restoreCase(id);
+    toast({
+      title: "Case Restored",
+      description: "The case has been restored.",
+    });
+  };
+
+  const handlePermanentDelete = (id: string) => {
+    permanentDeleteCase(id);
+    toast({
+      title: "Permanently Deleted",
+      description: "The case has been permanently deleted.",
+    });
+  };
+
+  const handleEmptyBin = () => {
+    emptyBin();
+    toast({
+      title: "Bin Emptied",
+      description: "All cases in the bin have been permanently deleted.",
+    });
+  };
+
+  const handleRestoreAll = () => {
+    restoreAllFromBin();
+    toast({
+      title: "All Cases Restored",
+      description: "All cases have been restored from the bin.",
     });
   };
 
@@ -127,6 +171,15 @@ const Index = () => {
               <Calendar className="h-4 w-4" />
               Calendar
             </TabsTrigger>
+            <TabsTrigger value="bin" className="gap-2">
+              <Trash2 className="h-4 w-4" />
+              Bin
+              {deletedCases.length > 0 && (
+                <span className="ml-1 rounded-full bg-destructive/20 px-2 py-0.5 text-xs text-destructive">
+                  {deletedCases.length}
+                </span>
+              )}
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="dashboard" className="animate-fade-in">
@@ -146,6 +199,16 @@ const Index = () => {
 
           <TabsContent value="calendar" className="animate-fade-in">
             <CalendarView cases={cases} onViewCase={handleViewCase} />
+          </TabsContent>
+
+          <TabsContent value="bin" className="animate-fade-in">
+            <BinList
+              deletedCases={deletedCases}
+              onRestore={handleRestoreCase}
+              onPermanentDelete={handlePermanentDelete}
+              onEmptyBin={handleEmptyBin}
+              onRestoreAll={handleRestoreAll}
+            />
           </TabsContent>
         </Tabs>
       </main>
