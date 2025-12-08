@@ -1,5 +1,10 @@
+/**
+ * @fileoverview Case list component with filtering, searching, and batch operations.
+ * Displays all cases in a table format with actions for view, edit, and delete.
+ */
+
 import { useState, useEffect } from 'react';
-import { Search, Filter, MoreVertical, Eye, Pencil, Trash2 } from 'lucide-react';
+import { Search, Filter, MoreVertical, Eye, Pencil, Trash2, FileCheck, FileX } from 'lucide-react';
 import { LegalCase, CaseStatus, CaseType } from '@/types/case';
 import { CaseStatusBadge, CasePriorityBadge } from './CaseStatusBadge';
 import { Input } from '@/components/ui/input';
@@ -116,7 +121,7 @@ export const CaseList = ({ cases, onView, onEdit, onDelete, onBatchDelete, initi
     <div className="space-y-4 animate-fade-in">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Search cases..."
             value={search}
@@ -131,13 +136,13 @@ export const CaseList = ({ cases, onView, onEdit, onDelete, onBatchDelete, initi
               size="sm"
               onClick={() => setDeleteDialogOpen(true)}
             >
-              <Trash2 className="mr-2 h-4 w-4" />
+              <Trash2 className="mr-2 h-5 w-5" />
               Delete {selectedIds.size} selected
             </Button>
           )}
           <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as CaseStatus | 'all')}>
             <SelectTrigger className="w-[130px]">
-              <Filter className="mr-2 h-4 w-4" />
+              <Filter className="mr-2 h-5 w-5" />
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
@@ -184,6 +189,7 @@ export const CaseList = ({ cases, onView, onEdit, onDelete, onBatchDelete, initi
               <TableHead className="font-semibold">Type</TableHead>
               <TableHead className="font-semibold">Status</TableHead>
               <TableHead className="font-semibold">Priority</TableHead>
+              <TableHead className="font-semibold">Judgment</TableHead>
               <TableHead className="font-semibold">Next Hearing</TableHead>
               <TableHead className="w-[50px]"></TableHead>
             </TableRow>
@@ -191,7 +197,7 @@ export const CaseList = ({ cases, onView, onEdit, onDelete, onBatchDelete, initi
           <TableBody>
             {filteredCases.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="h-32 text-center text-muted-foreground">
+                <TableCell colSpan={10} className="h-32 text-center text-muted-foreground">
                   {cases.length === 0 ? 'No cases yet. Add your first case to get started.' : 'No cases match your filters.'}
                 </TableCell>
               </TableRow>
@@ -215,29 +221,42 @@ export const CaseList = ({ cases, onView, onEdit, onDelete, onBatchDelete, initi
                   <TableCell><CaseStatusBadge status={caseItem.status} /></TableCell>
                   <TableCell><CasePriorityBadge priority={caseItem.priority} /></TableCell>
                   <TableCell>
+                    {caseItem.judgmentCollected ? (
+                      <span className="inline-flex items-center gap-1.5 text-success">
+                        <FileCheck className="h-5 w-5" />
+                        <span className="text-sm">Collected</span>
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+                        <FileX className="h-5 w-5" />
+                        <span className="text-sm">Not Collected</span>
+                      </span>
+                    )}
+                  </TableCell>
+                  <TableCell>
                     {caseItem.nextHearing ? new Date(caseItem.nextHearing).toLocaleDateString() : '-'}
                   </TableCell>
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <MoreVertical className="h-4 w-4" />
+                          <MoreVertical className="h-5 w-5" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem onClick={() => onView(caseItem)}>
-                          <Eye className="mr-2 h-4 w-4" />
+                          <Eye className="mr-2 h-5 w-5" />
                           View Details
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => onEdit(caseItem)}>
-                          <Pencil className="mr-2 h-4 w-4" />
+                          <Pencil className="mr-2 h-5 w-5" />
                           Edit
                         </DropdownMenuItem>
                         <DropdownMenuItem 
                           onClick={() => onDelete(caseItem.id)}
                           className="text-destructive focus:text-destructive"
                         >
-                          <Trash2 className="mr-2 h-4 w-4" />
+                          <Trash2 className="mr-2 h-5 w-5" />
                           Delete
                         </DropdownMenuItem>
                       </DropdownMenuContent>
