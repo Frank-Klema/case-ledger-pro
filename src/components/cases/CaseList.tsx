@@ -59,6 +59,7 @@ export const CaseList = ({ cases, onView, onEdit, onDelete, onBatchDelete, initi
   const [priorityFilter, setPriorityFilter] = useState<'all' | 'urgent'>('all');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [singleDeleteId, setSingleDeleteId] = useState<string | null>(null);
 
   // Apply initial filter from dashboard
   useEffect(() => {
@@ -253,11 +254,13 @@ export const CaseList = ({ cases, onView, onEdit, onDelete, onBatchDelete, initi
                           Edit
                         </DropdownMenuItem>
                         <DropdownMenuItem 
-                          onClick={() => onDelete(caseItem.id)}
+                          onClick={() => {
+                            setSingleDeleteId(caseItem.id);
+                          }}
                           className="text-destructive focus:text-destructive"
                         >
                           <Trash2 className="mr-2 h-5 w-5" />
-                          Delete
+                          Move to Bin
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -274,18 +277,45 @@ export const CaseList = ({ cases, onView, onEdit, onDelete, onBatchDelete, initi
         {selectedIds.size > 0 && ` • ${selectedIds.size} selected`}
       </p>
 
+      {/* Batch delete confirmation */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete {selectedIds.size} cases?</AlertDialogTitle>
+            <AlertDialogTitle>Move {selectedIds.size} cases to bin?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the selected cases.
+              These cases will be moved to the bin. You can restore them later or permanently delete them.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleBatchDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Delete
+              Move to Bin
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Single delete confirmation */}
+      <AlertDialog open={!!singleDeleteId} onOpenChange={(open) => !open && setSingleDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Move this case to bin?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This case will be moved to the bin. You can restore it later or permanently delete it.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => {
+                if (singleDeleteId) {
+                  onDelete(singleDeleteId);
+                  setSingleDeleteId(null);
+                }
+              }} 
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Move to Bin
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

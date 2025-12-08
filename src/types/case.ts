@@ -68,6 +68,8 @@ export interface LegalCase {
   createdAt: string;
   /** Timestamp when the case was last updated */
   updatedAt: string;
+  /** Timestamp when the case was soft-deleted (null if not deleted) */
+  deletedAt?: string | null;
 }
 
 /**
