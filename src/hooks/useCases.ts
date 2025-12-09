@@ -53,12 +53,15 @@ export const useCases = () => {
       ...data,
       id: crypto.randomUUID(),
       judgmentCollected: data.judgmentCollected ?? false,
+      lastCounsel: data.lastCounsel ?? '',
+      isArchived: data.isArchived ?? false,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       deletedAt: null,
     };
     setAllCases(prev => {
-      const updated = [...prev, newCase];
+      // Add new case at the beginning so it appears at the top
+      const updated = [newCase, ...prev];
       saveCases(updated);
       return updated;
     });
@@ -172,20 +175,78 @@ export const useCases = () => {
       ...data,
       id: crypto.randomUUID(),
       judgmentCollected: data.judgmentCollected ?? false,
+      lastCounsel: data.lastCounsel ?? '',
+      isArchived: data.isArchived ?? false,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       deletedAt: null,
     }));
     setAllCases(prev => {
-      const updated = [...prev, ...newCases];
+      // Add new cases at the beginning so they appear at the top
+      const updated = [...newCases, ...prev];
       saveCases(updated);
       return updated;
     });
     return newCases.length;
   }, []);
 
+  /**
+   * Archives a case by setting isArchived to true.
+   * 
+   * @param id - ID of the case to archive
+   */
+  const archiveCase = useCallback((id: string) => {
+    setAllCases(prev => {
+      const updated = prev.map(c => 
+        c.id === id 
+          ? { ...c, isArchived: true, updatedAt: new Date().toISOString() }
+          : c
+      );
+      saveCases(updated);
+      return updated;
+    });
+  }, []);
+
+  /**
+   * Unarchives a case by setting isArchived to false.
+   * 
+   * @param id - ID of the case to unarchive
+   */
+  const unarchiveCase = useCallback((id: string) => {
+    setAllCases(prev => {
+      const updated = prev.map(c => 
+        c.id === id 
+          ? { ...c, isArchived: false, updatedAt: new Date().toISOString() }
+          : c
+      );
+      saveCases(updated);
+      return updated;
+    });
+  }, []);
+
+  /** Active (non-deleted, non-archived) cases */
+  const activeCases = useMemo(() => 
+    cases.filter(c => !c.isArchived), 
+    [cases]
+  );
+
+  /** Archived cases */
+  const archivedCases = useMemo(() => 
+    cases.filter(c => c.isArchived), 
+    [cases]
+  );
+
+  /** Cases with judgment/order not yet collected */
+  const pendingJudgmentCases = useMemo(() => 
+    cases.filter(c => !c.judgmentCollected && (c.status === 'closed' || c.status === 'pending')), 
+    [cases]
+  );
+
   return {
     cases,
+    activeCases,
+    archivedCases,
+    pendingJudgmentCases,
     deletedCases,
     loading,
     addCase,
@@ -196,5 +257,7 @@ export const useCases = () => {
     emptyBin,
     restoreAllFromBin,
     importCases,
+    archiveCase,
+    unarchiveCase,
   };
 };

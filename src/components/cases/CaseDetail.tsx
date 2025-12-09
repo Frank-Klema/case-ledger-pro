@@ -1,3 +1,8 @@
+/**
+ * @fileoverview Case detail dialog component showing all case information.
+ * Displays comprehensive case details including garnishee fields if applicable.
+ */
+
 import { LegalCase } from '@/types/case';
 import { CaseStatusBadge, CasePriorityBadge } from './CaseStatusBadge';
 import { Button } from '@/components/ui/button';
@@ -8,7 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Calendar, User, Users, Building, Scale, FileText, Gavel, Clock, MessageSquare } from 'lucide-react';
+import { Calendar, User, Users, Building, Scale, FileText, Gavel, Clock, MessageSquare, UserCheck } from 'lucide-react';
 
 interface CaseDetailProps {
   open: boolean;
@@ -28,7 +33,7 @@ export const CaseDetail = ({ open, onClose, caseItem, onEdit }: CaseDetailProps)
         <DialogHeader>
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-sm font-medium text-accent">{caseItem.caseNumber}</p>
+              <p className="text-sm font-medium text-foreground">{caseItem.caseNumber}</p>
               <DialogTitle className="font-heading text-xl mt-1">{caseItem.title}</DialogTitle>
             </div>
             <div className="flex gap-2">
@@ -41,7 +46,7 @@ export const CaseDetail = ({ open, onClose, caseItem, onEdit }: CaseDetailProps)
         <div className="space-y-6 mt-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
-              <User className="h-5 w-5 text-accent mt-0.5" />
+              <User className="h-5 w-5 text-primary mt-0.5" />
               <div>
                 <p className="text-sm text-muted-foreground">Client</p>
                 <p className="font-medium">{caseItem.client || '-'}</p>
@@ -82,13 +87,22 @@ export const CaseDetail = ({ open, onClose, caseItem, onEdit }: CaseDetailProps)
               </div>
             </div>
 
-            <div className="flex items-start gap-3 p-3 rounded-lg bg-accent/10">
-              <Calendar className="h-5 w-5 text-accent mt-0.5" />
+            <div className="flex items-start gap-3 p-3 rounded-lg bg-primary/10">
+              <Calendar className="h-5 w-5 text-primary mt-0.5" />
               <div>
                 <p className="text-sm text-muted-foreground">Next Hearing</p>
-                <p className="font-medium text-accent">
+                <p className="font-medium text-foreground">
                   {caseItem.nextHearing ? new Date(caseItem.nextHearing).toLocaleDateString() : '-'}
                 </p>
+              </div>
+            </div>
+
+            {/* Last Counsel Field */}
+            <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 sm:col-span-2">
+              <UserCheck className="h-5 w-5 text-muted-foreground mt-0.5" />
+              <div>
+                <p className="text-sm text-muted-foreground">Last Counsel (Handled on Last Date)</p>
+                <p className="font-medium">{caseItem.lastCounsel || '-'}</p>
               </div>
             </div>
           </div>
@@ -101,36 +115,46 @@ export const CaseDetail = ({ open, onClose, caseItem, onEdit }: CaseDetailProps)
             <p className="capitalize">{caseItem.type}</p>
           </div>
 
+          {/* Judgment Collection Status */}
+          <div className="flex items-center gap-3 p-3 rounded-lg border border-border">
+            <div className={`h-3 w-3 rounded-full ${caseItem.judgmentCollected ? 'bg-success' : 'bg-warning'}`} />
+            <div>
+              <p className="font-medium">
+                {caseItem.judgmentCollected ? 'Judgment/Order Collected' : 'Judgment/Order Not Yet Collected'}
+              </p>
+            </div>
+          </div>
+
           {isGarnishee && caseItem.garnisheeDetails && (
             <>
               <Separator />
               <div className="space-y-4">
-                <h3 className="font-heading font-semibold text-accent flex items-center gap-2">
+                <h3 className="font-heading font-semibold text-primary flex items-center gap-2">
                   <Gavel className="h-4 w-4" />
                   Garnishee Details
                 </h3>
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="flex items-start gap-3 p-3 rounded-lg bg-accent/10">
-                    <Building className="h-5 w-5 text-accent mt-0.5" />
+                  <div className="flex items-start gap-3 p-3 rounded-lg bg-primary/10">
+                    <Building className="h-5 w-5 text-primary mt-0.5" />
                     <div>
                       <p className="text-sm text-muted-foreground">Garnishee Court</p>
                       <p className="font-medium">{caseItem.garnisheeDetails.garnisheeCourt || '-'}</p>
                     </div>
                   </div>
 
-                  <div className="flex items-start gap-3 p-3 rounded-lg bg-accent/10">
-                    <User className="h-5 w-5 text-accent mt-0.5" />
+                  <div className="flex items-start gap-3 p-3 rounded-lg bg-primary/10">
+                    <User className="h-5 w-5 text-primary mt-0.5" />
                     <div>
                       <p className="text-sm text-muted-foreground">Represented Garnishee</p>
                       <p className="font-medium">{caseItem.garnisheeDetails.representedGarnishee || '-'}</p>
                     </div>
                   </div>
 
-                  <div className="flex items-start gap-3 p-3 rounded-lg bg-accent/10">
-                    <Clock className="h-5 w-5 text-accent mt-0.5" />
+                  <div className="flex items-start gap-3 p-3 rounded-lg bg-primary/10">
+                    <Clock className="h-5 w-5 text-primary mt-0.5" />
                     <div>
                       <p className="text-sm text-muted-foreground">Garnishee Deadline</p>
-                      <p className="font-medium text-accent">
+                      <p className="font-medium text-foreground">
                         {caseItem.garnisheeDetails.garnisheeDeadline 
                           ? new Date(caseItem.garnisheeDetails.garnisheeDeadline).toLocaleDateString() 
                           : '-'}
@@ -142,10 +166,10 @@ export const CaseDetail = ({ open, onClose, caseItem, onEdit }: CaseDetailProps)
                 {caseItem.garnisheeDetails.garnisheeComment && (
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
-                      <MessageSquare className="h-4 w-4 text-accent" />
+                      <MessageSquare className="h-4 w-4 text-primary" />
                       <p className="text-sm font-medium text-muted-foreground">Garnishee Comment</p>
                     </div>
-                    <p className="text-sm leading-relaxed whitespace-pre-wrap bg-accent/10 p-3 rounded-lg">
+                    <p className="text-sm leading-relaxed whitespace-pre-wrap bg-primary/10 p-3 rounded-lg">
                       {caseItem.garnisheeDetails.garnisheeComment}
                     </p>
                   </div>
@@ -179,7 +203,7 @@ export const CaseDetail = ({ open, onClose, caseItem, onEdit }: CaseDetailProps)
             <Button variant="outline" onClick={onClose}>
               Close
             </Button>
-            <Button variant="accent" onClick={onEdit}>
+            <Button onClick={onEdit}>
               Edit Case
             </Button>
           </div>

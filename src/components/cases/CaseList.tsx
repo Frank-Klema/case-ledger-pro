@@ -1,10 +1,10 @@
 /**
- * @fileoverview Case list component with filtering, searching, and batch operations.
- * Displays all cases in a table format with actions for view, edit, and delete.
+ * @fileoverview Case list component with filtering, searching, sorting, and batch operations.
+ * Displays all cases in a table format with actions for view, edit, delete, and archive.
  */
 
-import { useState, useEffect } from 'react';
-import { Search, Filter, MoreVertical, Eye, Pencil, Trash2, FileCheck, FileX } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { Search, Filter, MoreVertical, Eye, Pencil, Trash2, FileCheck, FileX, Archive, ArrowUpDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { LegalCase, CaseStatus, CaseType } from '@/types/case';
 import { CaseStatusBadge, CasePriorityBadge } from './CaseStatusBadge';
 import { Input } from '@/components/ui/input';
@@ -22,6 +22,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import {
   Table,
@@ -42,6 +43,11 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { DashboardFilter } from '@/components/dashboard/Dashboard';
+import { useSettings } from '@/hooks/useSettings';
+
+/** Sort options for the case list */
+type SortField = 'createdAt' | 'caseNumber' | 'title' | 'client' | 'nextHearing' | 'filingDate' | 'court';
+type SortOrder = 'asc' | 'desc';
 
 interface CaseListProps {
   cases: LegalCase[];
@@ -49,10 +55,22 @@ interface CaseListProps {
   onEdit: (caseItem: LegalCase) => void;
   onDelete: (id: string) => void;
   onBatchDelete?: (ids: string[]) => void;
+  onArchive?: (id: string) => void;
   initialFilter?: DashboardFilter;
+  showArchived?: boolean;
 }
 
-export const CaseList = ({ cases, onView, onEdit, onDelete, onBatchDelete, initialFilter }: CaseListProps) => {
+export const CaseList = ({ 
+  cases, 
+  onView, 
+  onEdit, 
+  onDelete, 
+  onBatchDelete, 
+  onArchive,
+  initialFilter,
+  showArchived = false 
+}: CaseListProps) => {
+  const { settings } = useSettings();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<CaseStatus | 'all'>('all');
   const [typeFilter, setTypeFilter] = useState<CaseType | 'all'>('all');
@@ -60,39 +78,104 @@ export const CaseList = ({ cases, onView, onEdit, onDelete, onBatchDelete, initi
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [singleDeleteId, setSingleDeleteId] = useState<string | null>(null);
+  const [sortField, setSortField] = useState<SortField>('createdAt');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const casesPerPage = settings.casesPerPage;
 
   // Apply initial filter from dashboard
   useEffect(() => {
     if (initialFilter) {
-      if (initialFilter === 'all') {
+      if (initialFilter === 'all' || initialFilter === 'archived' || initialFilter === 'pendingJudgment') {
         setStatusFilter('all');
         setPriorityFilter('all');
       } else if (initialFilter === 'urgent') {
         setStatusFilter('all');
         setPriorityFilter('urgent');
       } else {
-        setStatusFilter(initialFilter);
+        setStatusFilter(initialFilter as CaseStatus);
         setPriorityFilter('all');
       }
     }
   }, [initialFilter]);
 
-  const filteredCases = cases.filter(c => {
-    const matchesSearch = 
-      c.title.toLowerCase().includes(search.toLowerCase()) ||
-      c.caseNumber.toLowerCase().includes(search.toLowerCase()) ||
-      c.client.toLowerCase().includes(search.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || c.status === statusFilter;
-    const matchesType = typeFilter === 'all' || c.type === typeFilter;
-    const matchesPriority = priorityFilter === 'all' || c.priority === priorityFilter;
-    return matchesSearch && matchesStatus && matchesType && matchesPriority;
-  });
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, statusFilter, typeFilter, priorityFilter, sortField, sortOrder]);
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortOrder('desc');
+    }
+  };
+
+  const filteredAndSortedCases = useMemo(() => {
+    let result = cases.filter(c => {
+      const matchesSearch = 
+        c.title.toLowerCase().includes(search.toLowerCase()) ||
+        c.caseNumber.toLowerCase().includes(search.toLowerCase()) ||
+        c.client.toLowerCase().includes(search.toLowerCase()) ||
+        c.court.toLowerCase().includes(search.toLowerCase());
+      const matchesStatus = statusFilter === 'all' || c.status === statusFilter;
+      const matchesType = typeFilter === 'all' || c.type === typeFilter;
+      const matchesPriority = priorityFilter === 'all' || c.priority === priorityFilter;
+      const matchesArchived = showArchived ? c.isArchived : !c.isArchived;
+      return matchesSearch && matchesStatus && matchesType && matchesPriority && matchesArchived;
+    });
+
+    // Sort the results
+    result.sort((a, b) => {
+      let comparison = 0;
+      switch (sortField) {
+        case 'createdAt':
+          comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+          break;
+        case 'caseNumber':
+          comparison = a.caseNumber.localeCompare(b.caseNumber);
+          break;
+        case 'title':
+          comparison = a.title.localeCompare(b.title);
+          break;
+        case 'client':
+          comparison = a.client.localeCompare(b.client);
+          break;
+        case 'court':
+          comparison = a.court.localeCompare(b.court);
+          break;
+        case 'nextHearing':
+          const dateA = a.nextHearing ? new Date(a.nextHearing).getTime() : 0;
+          const dateB = b.nextHearing ? new Date(b.nextHearing).getTime() : 0;
+          comparison = dateA - dateB;
+          break;
+        case 'filingDate':
+          const fileDateA = a.filingDate ? new Date(a.filingDate).getTime() : 0;
+          const fileDateB = b.filingDate ? new Date(b.filingDate).getTime() : 0;
+          comparison = fileDateA - fileDateB;
+          break;
+      }
+      return sortOrder === 'asc' ? comparison : -comparison;
+    });
+
+    return result;
+  }, [cases, search, statusFilter, typeFilter, priorityFilter, sortField, sortOrder, showArchived]);
+
+  // Pagination
+  const totalPages = Math.ceil(filteredAndSortedCases.length / casesPerPage);
+  const paginatedCases = useMemo(() => {
+    const startIndex = (currentPage - 1) * casesPerPage;
+    return filteredAndSortedCases.slice(startIndex, startIndex + casesPerPage);
+  }, [filteredAndSortedCases, currentPage, casesPerPage]);
 
   const toggleSelectAll = () => {
-    if (selectedIds.size === filteredCases.length) {
+    if (selectedIds.size === paginatedCases.length) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(filteredCases.map(c => c.id)));
+      setSelectedIds(new Set(paginatedCases.map(c => c.id)));
     }
   };
 
@@ -116,7 +199,19 @@ export const CaseList = ({ cases, onView, onEdit, onDelete, onBatchDelete, initi
     setDeleteDialogOpen(false);
   };
 
-  const allSelected = filteredCases.length > 0 && selectedIds.size === filteredCases.length;
+  const allSelected = paginatedCases.length > 0 && selectedIds.size === paginatedCases.length;
+
+  const SortableHeader = ({ field, children }: { field: SortField; children: React.ReactNode }) => (
+    <TableHead 
+      className="font-semibold cursor-pointer hover:bg-muted/50 transition-colors"
+      onClick={() => handleSort(field)}
+    >
+      <div className="flex items-center gap-1">
+        {children}
+        <ArrowUpDown className={`h-3 w-3 ${sortField === field ? 'text-foreground' : 'text-muted-foreground'}`} />
+      </div>
+    </TableHead>
+  );
 
   return (
     <div className="space-y-4 animate-fade-in">
@@ -141,6 +236,29 @@ export const CaseList = ({ cases, onView, onEdit, onDelete, onBatchDelete, initi
               Delete {selectedIds.size} selected
             </Button>
           )}
+          <Select value={sortField} onValueChange={(v) => setSortField(v as SortField)}>
+            <SelectTrigger className="w-[140px]">
+              <ArrowUpDown className="mr-2 h-4 w-4" />
+              <SelectValue placeholder="Sort by" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="createdAt">Date Added</SelectItem>
+              <SelectItem value="caseNumber">Case Number</SelectItem>
+              <SelectItem value="title">Title</SelectItem>
+              <SelectItem value="client">Client</SelectItem>
+              <SelectItem value="court">Court</SelectItem>
+              <SelectItem value="nextHearing">Next Hearing</SelectItem>
+              <SelectItem value="filingDate">Filing Date</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button 
+            variant="outline" 
+            size="icon"
+            onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+            title={sortOrder === 'asc' ? 'Ascending' : 'Descending'}
+          >
+            <ArrowUpDown className={`h-4 w-4 ${sortOrder === 'desc' ? 'rotate-180' : ''} transition-transform`} />
+          </Button>
           <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as CaseStatus | 'all')}>
             <SelectTrigger className="w-[130px]">
               <Filter className="mr-2 h-5 w-5" />
@@ -184,40 +302,51 @@ export const CaseList = ({ cases, onView, onEdit, onDelete, onBatchDelete, initi
                   aria-label="Select all"
                 />
               </TableHead>
-              <TableHead className="font-semibold">Case Number</TableHead>
-              <TableHead className="font-semibold">Title</TableHead>
-              <TableHead className="font-semibold">Client</TableHead>
+              <SortableHeader field="caseNumber">Case Number</SortableHeader>
+              <SortableHeader field="title">Title</SortableHeader>
+              <SortableHeader field="client">Client</SortableHeader>
+              <SortableHeader field="court">Court</SortableHeader>
               <TableHead className="font-semibold">Type</TableHead>
               <TableHead className="font-semibold">Status</TableHead>
               <TableHead className="font-semibold">Priority</TableHead>
               <TableHead className="font-semibold">Judgment</TableHead>
-              <TableHead className="font-semibold">Next Hearing</TableHead>
+              <SortableHeader field="nextHearing">Next Hearing</SortableHeader>
               <TableHead className="w-[50px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredCases.length === 0 ? (
+            {paginatedCases.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={10} className="h-32 text-center text-muted-foreground">
+                <TableCell colSpan={11} className="h-32 text-center text-muted-foreground">
                   {cases.length === 0 ? 'No cases yet. Add your first case to get started.' : 'No cases match your filters.'}
                 </TableCell>
               </TableRow>
             ) : (
-              filteredCases.map((caseItem) => (
+              paginatedCases.map((caseItem) => (
                 <TableRow 
                   key={caseItem.id} 
-                  className={`hover:bg-muted/30 transition-colors ${selectedIds.has(caseItem.id) ? 'bg-muted/40' : ''}`}
+                  className={`hover:bg-muted/30 transition-colors cursor-pointer ${selectedIds.has(caseItem.id) ? 'bg-muted/40' : ''}`}
+                  onClick={(e) => {
+                    // Don't trigger view if clicking on checkbox or dropdown
+                    if ((e.target as HTMLElement).closest('[role="checkbox"]') || 
+                        (e.target as HTMLElement).closest('[data-radix-dropdown-menu-trigger]') ||
+                        (e.target as HTMLElement).closest('button')) {
+                      return;
+                    }
+                    onView(caseItem);
+                  }}
                 >
-                  <TableCell>
+                  <TableCell onClick={(e) => e.stopPropagation()}>
                     <Checkbox 
                       checked={selectedIds.has(caseItem.id)}
                       onCheckedChange={() => toggleSelect(caseItem.id)}
                       aria-label={`Select ${caseItem.title}`}
                     />
                   </TableCell>
-                  <TableCell className="font-medium text-accent">{caseItem.caseNumber}</TableCell>
+                  <TableCell className="font-medium text-foreground">{caseItem.caseNumber}</TableCell>
                   <TableCell className="font-medium">{caseItem.title}</TableCell>
                   <TableCell>{caseItem.client}</TableCell>
+                  <TableCell>{caseItem.court || '-'}</TableCell>
                   <TableCell className="capitalize">{caseItem.type}</TableCell>
                   <TableCell><CaseStatusBadge status={caseItem.status} /></TableCell>
                   <TableCell><CasePriorityBadge priority={caseItem.priority} /></TableCell>
@@ -234,10 +363,10 @@ export const CaseList = ({ cases, onView, onEdit, onDelete, onBatchDelete, initi
                       </span>
                     )}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="text-foreground">
                     {caseItem.nextHearing ? new Date(caseItem.nextHearing).toLocaleDateString() : '-'}
                   </TableCell>
-                  <TableCell>
+                  <TableCell onClick={(e) => e.stopPropagation()}>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -253,6 +382,13 @@ export const CaseList = ({ cases, onView, onEdit, onDelete, onBatchDelete, initi
                           <Pencil className="mr-2 h-5 w-5" />
                           Edit
                         </DropdownMenuItem>
+                        {onArchive && !caseItem.isArchived && (
+                          <DropdownMenuItem onClick={() => onArchive(caseItem.id)}>
+                            <Archive className="mr-2 h-5 w-5" />
+                            Archive
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuSeparator />
                         <DropdownMenuItem 
                           onClick={() => {
                             setSingleDeleteId(caseItem.id);
@@ -272,10 +408,36 @@ export const CaseList = ({ cases, onView, onEdit, onDelete, onBatchDelete, initi
         </Table>
       </div>
 
-      <p className="text-sm text-muted-foreground">
-        Showing {filteredCases.length} of {cases.length} cases
-        {selectedIds.size > 0 && ` • ${selectedIds.size} selected`}
-      </p>
+      {/* Pagination */}
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">
+          Showing {paginatedCases.length} of {filteredAndSortedCases.length} cases
+          {selectedIds.size > 0 && ` • ${selectedIds.size} selected`}
+        </p>
+        {totalPages > 1 && (
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="text-sm text-muted-foreground">
+              Page {currentPage} of {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+      </div>
 
       {/* Batch delete confirmation */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

@@ -31,6 +31,8 @@ export const exportToExcel = (cases: LegalCase[], filename: string = 'legal_case
     'Description': c.description,
     'Notes': c.notes,
     'Judgment Collected': c.judgmentCollected ? 'Yes' : 'No',
+    'Last Counsel': c.lastCounsel || '',
+    'Archived': c.isArchived ? 'Yes' : 'No',
     // Garnishee-specific fields
     'Garnishee Court': c.garnisheeDetails?.garnisheeCourt || '',
     'Represented Garnishee': c.garnisheeDetails?.representedGarnishee || '',
@@ -145,6 +147,8 @@ export const importFromExcel = (file: File): Promise<CaseFormData[]> => {
             description: String(row['Description'] || row['description'] || ''),
             notes: String(row['Notes'] || row['notes'] || ''),
             judgmentCollected: validateBoolean(row['Judgment Collected'] || row['judgmentCollected'] || ''),
+            lastCounsel: String(row['Last Counsel'] || row['lastCounsel'] || ''),
+            isArchived: validateBoolean(row['Archived'] || row['isArchived'] || ''),
             // Garnishee fields (only populated if type is garnishee)
             garnisheeDetails: caseType === 'garnishee' ? {
               garnisheeCourt: String(row['Garnishee Court'] || row['garnisheeCourt'] || ''),
@@ -188,6 +192,8 @@ export const downloadTemplate = () => {
       'Description': 'Brief description of the case',
       'Notes': 'Additional notes',
       'Judgment Collected': 'No',
+      'Last Counsel': 'John Smith',
+      'Archived': 'No',
       'Garnishee Court': '',
       'Represented Garnishee': '',
       'Garnishee Comment': '',
@@ -208,6 +214,8 @@ export const downloadTemplate = () => {
       'Description': 'Garnishee proceeding description',
       'Notes': 'Case notes',
       'Judgment Collected': 'Yes',
+      'Last Counsel': 'Jane Doe',
+      'Archived': 'No',
       'Garnishee Court': 'Commercial Court',
       'Represented Garnishee': 'Third Party Bank',
       'Garnishee Comment': 'Awaiting bank response on funds held',
