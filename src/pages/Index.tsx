@@ -1,3 +1,8 @@
+/**
+ * @fileoverview Main index page component for the legal case management app.
+ * Contains dashboard, case list, calendar, archived cases, and bin views.
+ */
+
 import { useState } from 'react';
 import { Header } from '@/components/layout/Header';
 import { Dashboard, DashboardFilter } from '@/components/dashboard/Dashboard';
@@ -12,11 +17,14 @@ import { exportToExcel } from '@/lib/excel';
 import { LegalCase, CaseFormData } from '@/types/case';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { LayoutDashboard, List, Calendar, Trash2 } from 'lucide-react';
+import { LayoutDashboard, List, Calendar, Trash2, Archive, FileX } from 'lucide-react';
 
 const Index = () => {
   const { 
     cases, 
+    activeCases,
+    archivedCases,
+    pendingJudgmentCases,
     deletedCases,
     addCase, 
     updateCase, 
@@ -25,7 +33,9 @@ const Index = () => {
     permanentDeleteCase,
     emptyBin,
     restoreAllFromBin,
-    importCases 
+    importCases,
+    archiveCase,
+    unarchiveCase,
   } = useCases();
   const { toast } = useToast();
   
@@ -68,6 +78,22 @@ const Index = () => {
     toast({
       title: "Moved to Bin",
       description: `${ids.length} cases have been moved to the bin.`,
+    });
+  };
+
+  const handleArchiveCase = (id: string) => {
+    archiveCase(id);
+    toast({
+      title: "Case Archived",
+      description: "The case has been archived.",
+    });
+  };
+
+  const handleUnarchiveCase = (id: string) => {
+    unarchiveCase(id);
+    toast({
+      title: "Case Unarchived",
+      description: "The case has been restored from archive.",
     });
   };
 
@@ -145,7 +171,13 @@ const Index = () => {
 
   const handleDashboardFilterSelect = (filter: DashboardFilter) => {
     setDashboardFilter(filter);
-    setActiveTab('cases');
+    if (filter === 'archived') {
+      setActiveTab('archived');
+    } else if (filter === 'pendingJudgment') {
+      setActiveTab('pendingJudgment');
+    } else {
+      setActiveTab('cases');
+    }
   };
 
   return (
@@ -158,7 +190,7 @@ const Index = () => {
 
       <main className="container py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="bg-muted/50">
+          <TabsList className="bg-muted/50 flex-wrap">
             <TabsTrigger value="dashboard" className="gap-2">
               <LayoutDashboard className="h-4 w-4" />
               Dashboard
@@ -170,6 +202,24 @@ const Index = () => {
             <TabsTrigger value="calendar" className="gap-2">
               <Calendar className="h-4 w-4" />
               Calendar
+            </TabsTrigger>
+            <TabsTrigger value="archived" className="gap-2">
+              <Archive className="h-4 w-4" />
+              Archived
+              {archivedCases.length > 0 && (
+                <span className="ml-1 rounded-full bg-muted px-2 py-0.5 text-xs">
+                  {archivedCases.length}
+                </span>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="pendingJudgment" className="gap-2">
+              <FileX className="h-4 w-4" />
+              Pending Judgment
+              {pendingJudgmentCases.length > 0 && (
+                <span className="ml-1 rounded-full bg-warning/20 px-2 py-0.5 text-xs text-warning">
+                  {pendingJudgmentCases.length}
+                </span>
+              )}
             </TabsTrigger>
             <TabsTrigger value="bin" className="gap-2">
               <Trash2 className="h-4 w-4" />
@@ -183,22 +233,50 @@ const Index = () => {
           </TabsList>
 
           <TabsContent value="dashboard" className="animate-fade-in">
-            <Dashboard cases={cases} onFilterSelect={handleDashboardFilterSelect} />
+            <Dashboard 
+              cases={cases} 
+              archivedCases={archivedCases}
+              pendingJudgmentCases={pendingJudgmentCases}
+              onFilterSelect={handleDashboardFilterSelect}
+              onCaseClick={handleViewCase}
+            />
           </TabsContent>
 
           <TabsContent value="cases" className="animate-fade-in">
             <CaseList
-              cases={cases}
+              cases={activeCases}
               onView={handleViewCase}
               onEdit={handleEditCase}
               onDelete={handleDeleteCase}
               onBatchDelete={handleBatchDelete}
+              onArchive={handleArchiveCase}
               initialFilter={dashboardFilter}
             />
           </TabsContent>
 
           <TabsContent value="calendar" className="animate-fade-in">
-            <CalendarView cases={cases} onViewCase={handleViewCase} />
+            <CalendarView cases={activeCases} onViewCase={handleViewCase} />
+          </TabsContent>
+
+          <TabsContent value="archived" className="animate-fade-in">
+            <CaseList
+              cases={archivedCases}
+              onView={handleViewCase}
+              onEdit={handleEditCase}
+              onDelete={handleDeleteCase}
+              onBatchDelete={handleBatchDelete}
+              showArchived={true}
+            />
+          </TabsContent>
+
+          <TabsContent value="pendingJudgment" className="animate-fade-in">
+            <CaseList
+              cases={pendingJudgmentCases}
+              onView={handleViewCase}
+              onEdit={handleEditCase}
+              onDelete={handleDeleteCase}
+              onBatchDelete={handleBatchDelete}
+            />
           </TabsContent>
 
           <TabsContent value="bin" className="animate-fade-in">

@@ -62,6 +62,10 @@ export interface LegalCase {
   notes: string;
   /** Whether copy of judgment or court order has been collected */
   judgmentCollected: boolean;
+  /** Counsel that handled the matter on the last date */
+  lastCounsel: string;
+  /** Whether the case is archived */
+  isArchived: boolean;
   /** Garnishee-specific fields (only for garnishee case type) */
   garnisheeDetails?: GarnisheeDetails;
   /** Timestamp when the case was created */
@@ -92,6 +96,10 @@ export interface CaseFormData {
   notes: string;
   /** Whether copy of judgment or court order has been collected */
   judgmentCollected: boolean;
+  /** Counsel that handled the matter on the last date */
+  lastCounsel: string;
+  /** Whether the case is archived */
+  isArchived: boolean;
   /** Garnishee-specific fields (only for garnishee case type) */
   garnisheeDetails?: GarnisheeDetails;
 }

@@ -1,4 +1,8 @@
-import { Settings, Moon, Sun, Monitor, Type, LayoutGrid } from 'lucide-react';
+/**
+ * @fileoverview Settings dialog component for customizing app appearance and behavior.
+ */
+
+import { Settings, Moon, Sun, Monitor, Type, LayoutGrid, List } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -10,7 +14,7 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { useSettings, Theme, FontSize } from '@/hooks/useSettings';
+import { useSettings, Theme, FontSize, CasesPerPage } from '@/hooks/useSettings';
 import { cn } from '@/lib/utils';
 
 const themes: { value: Theme; label: string; icon: typeof Sun }[] = [
@@ -23,6 +27,13 @@ const fontSizes: { value: FontSize; label: string; sample: string }[] = [
   { value: 'small', label: 'Small', sample: 'Aa' },
   { value: 'medium', label: 'Medium', sample: 'Aa' },
   { value: 'large', label: 'Large', sample: 'Aa' },
+];
+
+const casesPerPageOptions: { value: CasesPerPage; label: string }[] = [
+  { value: 10, label: '10' },
+  { value: 15, label: '15' },
+  { value: 25, label: '25' },
+  { value: 50, label: '50' },
 ];
 
 export const SettingsDialog = () => {
@@ -111,6 +122,35 @@ export const SettingsDialog = () => {
                   <span className={cn(
                     "text-xs font-medium",
                     settings.fontSize === value ? "text-primary" : "text-muted-foreground"
+                  )}>
+                    {label}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Cases Per Page */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <List className="h-4 w-4 text-muted-foreground" />
+              <Label className="text-sm font-medium">Cases Per Page</Label>
+            </div>
+            <div className="grid grid-cols-4 gap-2">
+              {casesPerPageOptions.map(({ value, label }) => (
+                <button
+                  key={value}
+                  onClick={() => updateSettings({ casesPerPage: value })}
+                  className={cn(
+                    "flex flex-col items-center gap-1 rounded-lg border-2 p-3 transition-all",
+                    settings.casesPerPage === value
+                      ? "border-primary bg-primary/5"
+                      : "border-border hover:border-muted-foreground/50"
+                  )}
+                >
+                  <span className={cn(
+                    "text-sm font-medium",
+                    settings.casesPerPage === value ? "text-primary" : "text-muted-foreground"
                   )}>
                     {label}
                   </span>

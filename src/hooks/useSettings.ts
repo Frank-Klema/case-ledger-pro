@@ -3,16 +3,20 @@ import { useState, useEffect, useCallback } from 'react';
 export type FontSize = 'small' | 'medium' | 'large';
 export type Theme = 'light' | 'dark' | 'system';
 
+export type CasesPerPage = 10 | 15 | 25 | 50;
+
 interface Settings {
   theme: Theme;
   fontSize: FontSize;
   compactMode: boolean;
+  casesPerPage: CasesPerPage;
 }
 
 const defaultSettings: Settings = {
   theme: 'system',
   fontSize: 'medium',
   compactMode: false,
+  casesPerPage: 15,
 };
 
 const SETTINGS_KEY = 'legalcase-settings';

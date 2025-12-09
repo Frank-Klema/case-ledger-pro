@@ -54,6 +54,8 @@ const caseSchema = z.object({
   description: z.string(),
   notes: z.string(),
   judgmentCollected: z.boolean(),
+  lastCounsel: z.string(),
+  isArchived: z.boolean(),
   garnisheeDetails: z.object({
     garnisheeCourt: z.string(),
     representedGarnishee: z.string(),
@@ -103,6 +105,8 @@ export const CaseForm = ({ open, onClose, onSubmit, initialData, mode }: CaseFor
       description: '',
       notes: '',
       judgmentCollected: false,
+      lastCounsel: '',
+      isArchived: false,
       garnisheeDetails: {
         garnisheeCourt: '',
         representedGarnishee: '',
@@ -121,6 +125,8 @@ export const CaseForm = ({ open, onClose, onSubmit, initialData, mode }: CaseFor
       form.reset({
         ...initialData,
         judgmentCollected: initialData.judgmentCollected ?? false,
+        lastCounsel: initialData.lastCounsel ?? '',
+        isArchived: initialData.isArchived ?? false,
         garnisheeDetails: initialData.garnisheeDetails || {
           garnisheeCourt: '',
           representedGarnishee: '',
@@ -341,6 +347,20 @@ export const CaseForm = ({ open, onClose, onSubmit, initialData, mode }: CaseFor
                   </FormItem>
                 )}
               />
+
+              <FormField
+                control={form.control}
+                name="lastCounsel"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Last Counsel</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Counsel who handled last date" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
 
             {/* Judgment Collection Status */}
@@ -365,11 +385,33 @@ export const CaseForm = ({ open, onClose, onSubmit, initialData, mode }: CaseFor
               )}
             />
 
+            {/* Archive Status */}
+            <FormField
+              control={form.control}
+              name="isArchived"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border border-border p-4">
+                  <div className="space-y-0.5">
+                    <FormLabel className="text-base">Archive Case</FormLabel>
+                    <p className="text-sm text-muted-foreground">
+                      Move this case to the archive
+                    </p>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
             {isGarnishee && (
               <>
                 <Separator className="my-4" />
                 <div className="space-y-4">
-                  <h3 className="font-heading font-semibold text-accent">Garnishee Details</h3>
+                  <h3 className="font-heading font-semibold text-primary">Garnishee Details</h3>
                   <div className="grid gap-4 sm:grid-cols-2">
                     <FormField
                       control={form.control}
@@ -475,7 +517,7 @@ export const CaseForm = ({ open, onClose, onSubmit, initialData, mode }: CaseFor
               <Button type="button" variant="outline" onClick={onClose}>
                 Cancel
               </Button>
-              <Button type="submit" variant="accent">
+              <Button type="submit">
                 {mode === 'add' ? 'Add Case' : 'Save Changes'}
               </Button>
             </div>
