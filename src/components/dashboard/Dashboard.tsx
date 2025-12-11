@@ -3,7 +3,7 @@
  * Provides a quick summary of case counts, upcoming hearings, and visual charts.
  */
 
-import { Briefcase, Clock, CheckCircle, AlertTriangle, Hourglass, Archive, FileX } from 'lucide-react';
+import { Briefcase, Clock, AlertTriangle, Hourglass } from 'lucide-react';
 import { StatsCard } from './StatsCard';
 import { CaseStatusChart } from './CaseStatusChart';
 import { LegalCase } from '@/types/case';
@@ -68,7 +68,7 @@ export const Dashboard = ({
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatsCard
           title="Total Cases"
           value={stats.total}
@@ -91,25 +91,11 @@ export const Dashboard = ({
           onClick={() => onFilterSelect?.('pending')}
         />
         <StatsCard
-          title="Closed Cases"
-          value={stats.closed}
-          icon={CheckCircle}
-          variant="success"
-          onClick={() => onFilterSelect?.('closed')}
-        />
-        <StatsCard
           title="Urgent Cases"
           value={stats.urgent}
           icon={AlertTriangle}
           variant="destructive"
           onClick={() => onFilterSelect?.('urgent')}
-        />
-        <StatsCard
-          title="Archived"
-          value={stats.archived}
-          icon={Archive}
-          variant="default"
-          onClick={() => onFilterSelect?.('archived')}
         />
       </div>
 
