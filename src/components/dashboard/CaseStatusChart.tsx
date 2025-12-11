@@ -21,7 +21,7 @@ interface CaseStatusChartProps {
 const STATUS_COLORS: Record<string, string> = {
   open: 'hsl(var(--warning))',
   pending: 'hsl(var(--muted-foreground))',
-  closed: 'hsl(var(--success))',
+  closed: 'hsl(180 60% 40%)', // Teal color
   archived: 'hsl(var(--accent))',
 };
 
