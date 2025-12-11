@@ -121,7 +121,7 @@ export const Dashboard = ({
       </div>
 
       {/* Secondary grid: Upcoming hearings, pending cases, pending judgments, and status chart */}
-      <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-3">
         {/* Upcoming Hearings Panel */}
         <div className="rounded-xl border border-border bg-card p-5 shadow-sm animate-slide-up">
           <h3 className="font-heading text-lg font-semibold text-foreground mb-4">Upcoming Hearings</h3>
@@ -169,32 +169,6 @@ export const Dashboard = ({
                   <div className="text-right">
                     <p className="text-sm font-medium text-warning">{c.type}</p>
                     <p className="text-xs text-muted-foreground">Pending</p>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-
-        {/* Pending Judgment Collection Panel */}
-        <div className="rounded-xl border border-border bg-card p-5 shadow-sm animate-slide-up">
-          <h3 className="font-heading text-lg font-semibold text-foreground mb-4">Judgments to Collect</h3>
-          <div className="space-y-3">
-            {pendingJudgmentCases.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4">All judgments collected</p>
-            ) : (
-              pendingJudgmentCases.slice(0, 5).map(c => (
-                <div 
-                  key={c.id} 
-                  className="flex items-center justify-between rounded-lg bg-muted/50 p-3 cursor-pointer hover:bg-muted/70 transition-colors"
-                  onClick={() => onCaseClick?.(c)}
-                >
-                  <div>
-                    <p className="font-medium text-foreground">{c.title}</p>
-                    <p className="text-sm text-muted-foreground">{c.caseNumber} • {c.court}</p>
-                  </div>
-                  <div className="text-right">
-                    <FileX className="h-5 w-5 text-warning" />
                   </div>
                 </div>
               ))
