@@ -56,6 +56,7 @@ interface CaseListProps {
   onDelete: (id: string) => void;
   onBatchDelete?: (ids: string[]) => void;
   onArchive?: (id: string) => void;
+  onBatchArchive?: (ids: string[]) => void;
   initialFilter?: DashboardFilter;
   showArchived?: boolean;
 }
@@ -67,6 +68,7 @@ export const CaseList = ({
   onDelete, 
   onBatchDelete, 
   onArchive,
+  onBatchArchive,
   initialFilter,
   showArchived = false 
 }: CaseListProps) => {
@@ -77,6 +79,7 @@ export const CaseList = ({
   const [priorityFilter, setPriorityFilter] = useState<'all' | 'urgent'>('all');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [archiveDialogOpen, setArchiveDialogOpen] = useState(false);
   const [singleDeleteId, setSingleDeleteId] = useState<string | null>(null);
   const [sortField, setSortField] = useState<SortField>('createdAt');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
@@ -199,6 +202,16 @@ export const CaseList = ({
     setDeleteDialogOpen(false);
   };
 
+  const handleBatchArchive = () => {
+    if (onBatchArchive) {
+      onBatchArchive(Array.from(selectedIds));
+    } else if (onArchive) {
+      selectedIds.forEach(id => onArchive(id));
+    }
+    setSelectedIds(new Set());
+    setArchiveDialogOpen(false);
+  };
+
   const allSelected = paginatedCases.length > 0 && selectedIds.size === paginatedCases.length;
 
   const SortableHeader = ({ field, children }: { field: SortField; children: React.ReactNode }) => (
@@ -227,14 +240,26 @@ export const CaseList = ({
         </div>
         <div className="flex gap-2 flex-wrap">
           {selectedIds.size > 0 && (
-            <Button 
-              variant="destructive" 
-              size="sm"
-              onClick={() => setDeleteDialogOpen(true)}
-            >
-              <Trash2 className="mr-2 h-5 w-5" />
-              Delete {selectedIds.size} selected
-            </Button>
+            <>
+              {onArchive && !showArchived && (
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setArchiveDialogOpen(true)}
+                >
+                  <Archive className="mr-2 h-5 w-5" />
+                  Archive {selectedIds.size} selected
+                </Button>
+              )}
+              <Button 
+                variant="destructive" 
+                size="sm"
+                onClick={() => setDeleteDialogOpen(true)}
+              >
+                <Trash2 className="mr-2 h-5 w-5" />
+                Delete {selectedIds.size} selected
+              </Button>
+            </>
           )}
           <Select value={sortField} onValueChange={(v) => setSortField(v as SortField)}>
             <SelectTrigger className="w-[140px]">
@@ -480,6 +505,24 @@ export const CaseList = ({
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Move to Bin
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Batch archive confirmation */}
+      <AlertDialog open={archiveDialogOpen} onOpenChange={setArchiveDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Archive {selectedIds.size} cases?</AlertDialogTitle>
+            <AlertDialogDescription>
+              These cases will be moved to the archive. You can unarchive them later if needed.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleBatchArchive}>
+              Archive
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
