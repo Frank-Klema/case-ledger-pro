@@ -67,17 +67,16 @@ export const CaseStatusChart = ({ cases }: CaseStatusChartProps) => {
 
   return (
     <ResponsiveContainer width="100%" height={250}>
-      <PieChart>
+      <PieChart margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
         <Pie
           data={chartData}
           cx="50%"
-          cy="50%"
-          innerRadius={50}
-          outerRadius={80}
+          cy="45%"
+          innerRadius={45}
+          outerRadius={75}
           paddingAngle={4}
           dataKey="value"
-          label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-          labelLine={false}
+          label={false}
         >
           {chartData.map((entry, index) => (
             <Cell 
@@ -95,11 +94,12 @@ export const CaseStatusChart = ({ cases }: CaseStatusChartProps) => {
             borderRadius: '8px',
             color: 'hsl(var(--foreground))',
           }}
-          formatter={(value: number) => [`${value} cases`, 'Count']}
+          formatter={(value: number, name: string) => [`${value} cases`, name]}
         />
         <Legend
           verticalAlign="bottom"
           height={36}
+          wrapperStyle={{ paddingTop: '10px' }}
           formatter={(value) => (
             <span style={{ color: 'hsl(var(--foreground))' }}>{value}</span>
           )}
