@@ -111,13 +111,6 @@ export const Dashboard = ({
           variant="default"
           onClick={() => onFilterSelect?.('archived')}
         />
-        <StatsCard
-          title="Judgment Pending"
-          value={stats.pendingJudgment}
-          icon={FileX}
-          variant="warning"
-          onClick={() => onFilterSelect?.('pendingJudgment')}
-        />
       </div>
 
       {/* Secondary grid: Upcoming hearings, pending cases, pending judgments, and status chart */}

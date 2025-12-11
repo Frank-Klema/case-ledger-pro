@@ -308,16 +308,16 @@ export const CaseList = ({
               <SortableHeader field="court">Court</SortableHeader>
               <TableHead className="font-semibold">Type</TableHead>
               <TableHead className="font-semibold">Status</TableHead>
-              <TableHead className="font-semibold">Priority</TableHead>
+              {!showArchived && <TableHead className="font-semibold">Priority</TableHead>}
               <TableHead className="font-semibold">Judgment</TableHead>
-              <SortableHeader field="nextHearing">Next Hearing</SortableHeader>
+              {!showArchived && <SortableHeader field="nextHearing">Next Hearing</SortableHeader>}
               <TableHead className="w-[50px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {paginatedCases.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={11} className="h-32 text-center text-muted-foreground">
+                <TableCell colSpan={showArchived ? 9 : 11} className="h-32 text-center text-muted-foreground">
                   {cases.length === 0 ? 'No cases yet. Add your first case to get started.' : 'No cases match your filters.'}
                 </TableCell>
               </TableRow>
@@ -349,7 +349,7 @@ export const CaseList = ({
                   <TableCell>{caseItem.court || '-'}</TableCell>
                   <TableCell className="capitalize">{caseItem.type}</TableCell>
                   <TableCell><CaseStatusBadge status={caseItem.status} /></TableCell>
-                  <TableCell><CasePriorityBadge priority={caseItem.priority} /></TableCell>
+                  {!showArchived && <TableCell><CasePriorityBadge priority={caseItem.priority} /></TableCell>}
                   <TableCell>
                     {caseItem.judgmentCollected ? (
                       <span className="inline-flex items-center gap-1.5 text-success">
@@ -363,9 +363,11 @@ export const CaseList = ({
                       </span>
                     )}
                   </TableCell>
-                  <TableCell className="text-foreground">
-                    {caseItem.nextHearing ? new Date(caseItem.nextHearing).toLocaleDateString() : '-'}
-                  </TableCell>
+                  {!showArchived && (
+                    <TableCell className="text-foreground">
+                      {caseItem.nextHearing ? new Date(caseItem.nextHearing).toLocaleDateString() : '-'}
+                    </TableCell>
+                  )}
                   <TableCell onClick={(e) => e.stopPropagation()}>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
