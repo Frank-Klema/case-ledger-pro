@@ -89,6 +89,14 @@ const Index = () => {
     });
   };
 
+  const handleBatchArchive = (ids: string[]) => {
+    ids.forEach(id => archiveCase(id));
+    toast({
+      title: "Cases Archived",
+      description: `${ids.length} cases have been archived.`,
+    });
+  };
+
   const handleUnarchiveCase = (id: string) => {
     unarchiveCase(id);
     toast({
@@ -250,6 +258,7 @@ const Index = () => {
               onDelete={handleDeleteCase}
               onBatchDelete={handleBatchDelete}
               onArchive={handleArchiveCase}
+              onBatchArchive={handleBatchArchive}
               initialFilter={dashboardFilter}
             />
           </TabsContent>
