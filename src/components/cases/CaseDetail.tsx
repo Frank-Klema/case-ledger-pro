@@ -30,7 +30,7 @@ export const CaseDetail = ({ open, onClose, caseItem, onEdit }: CaseDetailProps)
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader className="pt-2">
+        <DialogHeader className="pt-6">
           <div className="flex items-start justify-between">
             <div>
               <p className="text-sm font-medium text-foreground">{caseItem.caseNumber}</p>
