@@ -36,6 +36,7 @@ const Index = () => {
     importCases,
     archiveCase,
     unarchiveCase,
+    addCaseLog,
   } = useCases();
   const { toast } = useToast();
   
@@ -46,10 +47,19 @@ const Index = () => {
   const [formMode, setFormMode] = useState<'add' | 'edit'>('add');
   const [activeTab, setActiveTab] = useState('dashboard');
   const [dashboardFilter, setDashboardFilter] = useState<DashboardFilter>('all');
+  const [prefillNextHearing, setPrefillNextHearing] = useState<string | undefined>(undefined);
 
   const handleAddCase = () => {
     setSelectedCase(null);
     setFormMode('add');
+    setPrefillNextHearing(undefined);
+    setFormOpen(true);
+  };
+
+  const handleAddCaseFromCalendar = (defaultDate?: string) => {
+    setSelectedCase(null);
+    setFormMode('add');
+    setPrefillNextHearing(defaultDate);
     setFormOpen(true);
   };
 
@@ -264,7 +274,7 @@ const Index = () => {
           </TabsContent>
 
           <TabsContent value="calendar" className="animate-fade-in">
-            <CalendarView cases={activeCases} onViewCase={handleViewCase} />
+            <CalendarView cases={activeCases} onViewCase={handleViewCase} onAddCase={handleAddCaseFromCalendar} />
           </TabsContent>
 
           <TabsContent value="archived" className="animate-fade-in">
@@ -306,6 +316,7 @@ const Index = () => {
         onSubmit={handleFormSubmit}
         initialData={selectedCase || undefined}
         mode={formMode}
+        defaultNextHearing={prefillNextHearing}
       />
 
       <CaseDetail
@@ -313,6 +324,18 @@ const Index = () => {
         onClose={() => setDetailOpen(false)}
         caseItem={selectedCase}
         onEdit={() => selectedCase && handleEditCase(selectedCase)}
+        onAddLog={(id, entry) => {
+          addCaseLog(id, entry);
+          setSelectedCase(prev => prev ? {
+            ...prev,
+            logs: [
+              { ...entry, id: crypto.randomUUID(), createdAt: new Date().toISOString() },
+              ...(prev.logs ?? []),
+            ],
+            lastCounsel: entry.counsel || prev.lastCounsel,
+            nextHearing: entry.type === 'adjournment' && entry.adjournedTo ? entry.adjournedTo : prev.nextHearing,
+          } : prev);
+        }}
       />
 
       <ImportDialog

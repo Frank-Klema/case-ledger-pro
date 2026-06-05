@@ -2,8 +2,10 @@
  * @fileoverview Settings dialog component for customizing app appearance and behavior.
  */
 
-import { Settings, Moon, Sun, Monitor, Type, LayoutGrid, List } from 'lucide-react';
+import { useState } from 'react';
+import { Settings, Moon, Sun, Monitor, Type, LayoutGrid, List, UserCheck, Plus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   Dialog,
   DialogContent,
@@ -15,6 +17,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useSettings, Theme, FontSize, CasesPerPage } from '@/hooks/useSettings';
+import { useCounsels } from '@/hooks/useCounsels';
 import { cn } from '@/lib/utils';
 
 const themes: { value: Theme; label: string; icon: typeof Sun }[] = [
@@ -38,6 +41,8 @@ const casesPerPageOptions: { value: CasesPerPage; label: string }[] = [
 
 export const SettingsDialog = () => {
   const { settings, updateSettings, resetSettings } = useSettings();
+  const { counsels, addCounsel, removeCounsel } = useCounsels();
+  const [newCounsel, setNewCounsel] = useState('');
 
   return (
     <Dialog>
@@ -47,7 +52,7 @@ export const SettingsDialog = () => {
           <span className="sr-only">Settings</span>
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[480px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Settings className="h-5 w-5" />
@@ -182,6 +187,58 @@ export const SettingsDialog = () => {
           >
             Reset to Defaults
           </Button>
+
+          {/* Counsels manager */}
+          <div className="space-y-3 pt-2 border-t border-border">
+            <div className="flex items-center gap-2">
+              <UserCheck className="h-4 w-4 text-muted-foreground" />
+              <Label className="text-sm font-medium">Counsels</Label>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Manage the list of counsels available in the Last Counsel selector.
+            </p>
+            <div className="flex gap-2">
+              <Input
+                placeholder="New counsel name"
+                value={newCounsel}
+                onChange={(e) => setNewCounsel(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addCounsel(newCounsel);
+                    setNewCounsel('');
+                  }
+                }}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => { addCounsel(newCounsel); setNewCounsel(''); }}
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+            {counsels.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {counsels.map(c => (
+                  <span
+                    key={c}
+                    className="inline-flex items-center gap-1 rounded-full bg-muted px-3 py-1 text-xs"
+                  >
+                    {c}
+                    <button
+                      type="button"
+                      onClick={() => removeCounsel(c)}
+                      className="text-muted-foreground hover:text-destructive"
+                      aria-label={`Remove ${c}`}
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </DialogContent>
     </Dialog>

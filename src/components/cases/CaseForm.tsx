@@ -1,151 +1,124 @@
-/**
- * @fileoverview Case form component for creating and editing legal cases.
- * Provides a comprehensive form with validation for all case fields.
- */
-
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { CaseFormData, LegalCase } from '@/types/case';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
+  Form, FormControl, FormField, FormItem, FormLabel, FormMessage,
 } from '@/components/ui/form';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
+  Dialog, DialogContent, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
-import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
+import { Plus } from 'lucide-react';
+import { useCounsels } from '@/hooks/useCounsels';
 
-/**
- * Zod schema for case form validation.
- * Defines required and optional fields with their validation rules.
- */
 const caseSchema = z.object({
   caseNumber: z.string().min(1, 'Case number is required'),
   title: z.string().min(1, 'Title is required'),
-  client: z.string().min(1, 'Client name is required'),
-  opposingParty: z.string(),
-  type: z.enum(['civil', 'criminal', 'family', 'corporate', 'property', 'labor', 'garnishee', 'other']),
+  judgmentCreditor: z.string().min(1, 'Judgment creditor is required'),
+  judgmentDebtor: z.string(),
+  garnishee: z.string(),
   status: z.enum(['open', 'pending', 'closed', 'archived']),
   priority: z.enum(['low', 'medium', 'high', 'urgent']),
   court: z.string(),
   judge: z.string(),
   filingDate: z.string(),
   nextHearing: z.string(),
+  garnisheeDeadline: z.string(),
   description: z.string(),
   notes: z.string(),
   judgmentCollected: z.boolean(),
   lastCounsel: z.string(),
   isArchived: z.boolean(),
-  garnisheeDetails: z.object({
-    garnisheeCourt: z.string(),
-    representedGarnishee: z.string(),
-    garnisheeComment: z.string(),
-    garnisheeDeadline: z.string(),
-  }).optional(),
 });
 
-/**
- * Props for the CaseForm component.
- */
+const EMPTY: CaseFormData = {
+  caseNumber: '',
+  title: '',
+  judgmentCreditor: '',
+  judgmentDebtor: '',
+  garnishee: '',
+  status: 'open',
+  priority: 'medium',
+  court: '',
+  judge: '',
+  filingDate: '',
+  nextHearing: '',
+  garnisheeDeadline: '',
+  description: '',
+  notes: '',
+  judgmentCollected: false,
+  lastCounsel: '',
+  isArchived: false,
+};
+
 interface CaseFormProps {
-  /** Whether the form dialog is open */
   open: boolean;
-  /** Callback to close the form */
   onClose: () => void;
-  /** Callback when form is submitted with valid data */
   onSubmit: (data: CaseFormData) => void;
-  /** Initial data for editing an existing case */
   initialData?: LegalCase;
-  /** Whether adding a new case or editing existing */
   mode: 'add' | 'edit';
+  defaultNextHearing?: string;
 }
 
-/**
- * Form dialog for creating or editing legal cases.
- * Includes validation, conditional garnishee fields, and all case properties.
- * 
- * @param props - Component props
- * @returns JSX element with the case form dialog
- */
-export const CaseForm = ({ open, onClose, onSubmit, initialData, mode }: CaseFormProps) => {
+export const CaseForm = ({ open, onClose, onSubmit, initialData, mode, defaultNextHearing }: CaseFormProps) => {
+  const { counsels, addCounsel } = useCounsels();
+  const [newCounsel, setNewCounsel] = useState('');
+
   const form = useForm<CaseFormData>({
     resolver: zodResolver(caseSchema),
-    defaultValues: initialData || {
-      caseNumber: '',
-      title: '',
-      client: '',
-      opposingParty: '',
-      type: 'civil',
-      status: 'open',
-      priority: 'medium',
-      court: '',
-      judge: '',
-      filingDate: '',
-      nextHearing: '',
-      description: '',
-      notes: '',
-      judgmentCollected: false,
-      lastCounsel: '',
-      isArchived: false,
-      garnisheeDetails: {
-        garnisheeCourt: '',
-        representedGarnishee: '',
-        garnisheeComment: '',
-        garnisheeDeadline: '',
-      },
-    },
+    defaultValues: EMPTY,
   });
 
-  const caseType = form.watch('type');
-  const isGarnishee = caseType === 'garnishee';
-
-  // Reset form when initialData changes (e.g., when editing different case)
+  // Reset whenever the dialog opens — no residue from a previous case.
   useEffect(() => {
-    if (initialData) {
+    if (!open) return;
+    if (mode === 'edit' && initialData) {
       form.reset({
-        ...initialData,
+        caseNumber: initialData.caseNumber,
+        title: initialData.title,
+        judgmentCreditor: initialData.judgmentCreditor ?? '',
+        judgmentDebtor: initialData.judgmentDebtor ?? '',
+        garnishee: initialData.garnishee ?? '',
+        status: initialData.status,
+        priority: initialData.priority,
+        court: initialData.court ?? '',
+        judge: initialData.judge ?? '',
+        filingDate: initialData.filingDate ?? '',
+        nextHearing: initialData.nextHearing ?? '',
+        garnisheeDeadline: initialData.garnisheeDeadline ?? '',
+        description: initialData.description ?? '',
+        notes: initialData.notes ?? '',
         judgmentCollected: initialData.judgmentCollected ?? false,
         lastCounsel: initialData.lastCounsel ?? '',
         isArchived: initialData.isArchived ?? false,
-        garnisheeDetails: initialData.garnisheeDetails || {
-          garnisheeCourt: '',
-          representedGarnishee: '',
-          garnisheeComment: '',
-          garnisheeDeadline: '',
-        },
       });
+    } else {
+      form.reset({ ...EMPTY, nextHearing: defaultNextHearing || '' });
     }
-  }, [initialData, form]);
+    setNewCounsel('');
+  }, [open, mode, initialData, defaultNextHearing, form]);
 
   const handleSubmit = (data: CaseFormData) => {
-    // Only include garnishee details if type is garnishee
-    const submitData = {
-      ...data,
-      garnisheeDetails: data.type === 'garnishee' ? data.garnisheeDetails : undefined,
-    };
-    onSubmit(submitData);
-    form.reset();
+    if (data.lastCounsel) addCounsel(data.lastCounsel);
+    onSubmit(data);
+    form.reset(EMPTY);
     onClose();
+  };
+
+  const handleAddCounsel = () => {
+    const name = newCounsel.trim();
+    if (!name) return;
+    addCounsel(name);
+    form.setValue('lastCounsel', name);
+    setNewCounsel('');
   };
 
   return (
@@ -160,366 +133,209 @@ export const CaseForm = ({ open, onClose, onSubmit, initialData, mode }: CaseFor
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
-              <FormField
-                control={form.control}
-                name="caseNumber"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Case Number</FormLabel>
+              <FormField control={form.control} name="caseNumber" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Case Number</FormLabel>
+                  <FormControl><Input placeholder="GARN-2026-001" {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+
+              <FormField control={form.control} name="title" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Title</FormLabel>
+                  <FormControl><Input placeholder="Case title" {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+
+              <FormField control={form.control} name="judgmentCreditor" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Judgment Creditor</FormLabel>
+                  <FormControl><Input placeholder="Judgment creditor" {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+
+              <FormField control={form.control} name="judgmentDebtor" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Judgment Debtor</FormLabel>
+                  <FormControl><Input placeholder="Judgment debtor" {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+
+              <FormField control={form.control} name="garnishee" render={({ field }) => (
+                <FormItem className="sm:col-span-2">
+                  <FormLabel>Garnishee</FormLabel>
+                  <FormControl><Input placeholder="Represented garnishee" {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+
+              <FormField control={form.control} name="status" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Status</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                    <SelectContent>
+                      <SelectItem value="open">Open</SelectItem>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="closed">Closed</SelectItem>
+                      <SelectItem value="archived">Archived</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )} />
+
+              <FormField control={form.control} name="priority" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Priority</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                    <SelectContent>
+                      <SelectItem value="low">Low</SelectItem>
+                      <SelectItem value="medium">Medium</SelectItem>
+                      <SelectItem value="high">High</SelectItem>
+                      <SelectItem value="urgent">Urgent</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )} />
+
+              <FormField control={form.control} name="court" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Court</FormLabel>
+                  <FormControl><Input placeholder="Court name" {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+
+              <FormField control={form.control} name="judge" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Judge</FormLabel>
+                  <FormControl><Input placeholder="Judge name" {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+
+              <FormField control={form.control} name="filingDate" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Filing Date</FormLabel>
+                  <FormControl><Input type="date" {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+
+              <FormField control={form.control} name="nextHearing" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Next Hearing</FormLabel>
+                  <FormControl><Input type="date" {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+
+              <FormField control={form.control} name="garnisheeDeadline" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Garnishee Deadline</FormLabel>
+                  <FormControl><Input type="date" {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+
+              <FormField control={form.control} name="lastCounsel" render={({ field }) => (
+                <FormItem className="sm:col-span-2">
+                  <FormLabel>Last Counsel</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value || undefined}>
                     <FormControl>
-                      <Input placeholder="CASE-2024-001" {...field} />
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select counsel" />
+                      </SelectTrigger>
                     </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="title"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Title</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Case title" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="client"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Client</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Client name" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="opposingParty"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Opposing Party</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Opposing party name" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="type"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Case Type</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select type" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="civil">Civil</SelectItem>
-                        <SelectItem value="criminal">Criminal</SelectItem>
-                        <SelectItem value="family">Family</SelectItem>
-                        <SelectItem value="corporate">Corporate</SelectItem>
-                        <SelectItem value="property">Property</SelectItem>
-                        <SelectItem value="labor">Labor</SelectItem>
-                        <SelectItem value="garnishee">Garnishee</SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="status"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Status</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select status" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="open">Open</SelectItem>
-                        <SelectItem value="pending">Pending</SelectItem>
-                        <SelectItem value="closed">Closed</SelectItem>
-                        <SelectItem value="archived">Archived</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="priority"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Priority</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select priority" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="low">Low</SelectItem>
-                        <SelectItem value="medium">Medium</SelectItem>
-                        <SelectItem value="high">High</SelectItem>
-                        <SelectItem value="urgent">Urgent</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="court"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Court</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Court name" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="judge"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Judge</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Judge name" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="filingDate"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Filing Date</FormLabel>
-                    <FormControl>
-                      <Input type="date" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="nextHearing"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Next Hearing</FormLabel>
-                    <FormControl>
-                      <Input type="date" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="lastCounsel"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Last Counsel</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Counsel who handled last date" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                    <SelectContent>
+                      {counsels.length === 0 && (
+                        <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                          No counsels yet — add one below
+                        </div>
+                      )}
+                      {counsels.map(c => (
+                        <SelectItem key={c} value={c}>{c}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <div className="flex gap-2 mt-2">
+                    <Input
+                      placeholder="Add new counsel"
+                      value={newCounsel}
+                      onChange={(e) => setNewCounsel(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddCounsel();
+                        }
+                      }}
+                    />
+                    <Button type="button" variant="outline" onClick={handleAddCounsel}>
+                      <Plus className="h-4 w-4" />
+                      Add
+                    </Button>
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )} />
             </div>
 
-            {/* Judgment Collection Status */}
-            <FormField
-              control={form.control}
-              name="judgmentCollected"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-lg border border-border p-4">
-                  <div className="space-y-0.5">
-                    <FormLabel className="text-base">Judgment/Order Collected</FormLabel>
-                    <p className="text-sm text-muted-foreground">
-                      Mark if copy of judgment or court order has been collected
-                    </p>
-                  </div>
-                  <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-
-            {/* Archive Status */}
-            <FormField
-              control={form.control}
-              name="isArchived"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-lg border border-border p-4">
-                  <div className="space-y-0.5">
-                    <FormLabel className="text-base">Archive Case</FormLabel>
-                    <p className="text-sm text-muted-foreground">
-                      Move this case to the archive
-                    </p>
-                  </div>
-                  <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-
-            {isGarnishee && (
-              <>
-                <Separator className="my-4" />
-                <div className="space-y-4">
-                  <h3 className="font-heading font-semibold text-primary">Garnishee Details</h3>
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <FormField
-                      control={form.control}
-                      name="garnisheeDetails.garnisheeCourt"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Garnishee Court</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Garnishee court name" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="garnisheeDetails.representedGarnishee"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Represented Garnishee</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Name of represented garnishee" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="garnisheeDetails.garnisheeDeadline"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Garnishee Deadline</FormLabel>
-                          <FormControl>
-                            <Input type="date" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  <FormField
-                    control={form.control}
-                    name="garnisheeDetails.garnisheeComment"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Garnishee Comment</FormLabel>
-                        <FormControl>
-                          <Textarea 
-                            placeholder="Additional comments about the garnishee proceeding..." 
-                            className="min-h-[80px]"
-                            {...field} 
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+            <FormField control={form.control} name="judgmentCollected" render={({ field }) => (
+              <FormItem className="flex flex-row items-center justify-between rounded-lg border border-border p-4">
+                <div className="space-y-0.5">
+                  <FormLabel className="text-base">Judgment/Order Collected</FormLabel>
+                  <p className="text-sm text-muted-foreground">
+                    Mark if copy of judgment or court order has been collected
+                  </p>
                 </div>
-              </>
-            )}
+                <FormControl>
+                  <Switch checked={field.value} onCheckedChange={field.onChange} />
+                </FormControl>
+              </FormItem>
+            )} />
 
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Description</FormLabel>
-                  <FormControl>
-                    <Textarea 
-                      placeholder="Brief description of the case..." 
-                      className="min-h-[80px]"
-                      {...field} 
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <FormField control={form.control} name="isArchived" render={({ field }) => (
+              <FormItem className="flex flex-row items-center justify-between rounded-lg border border-border p-4">
+                <div className="space-y-0.5">
+                  <FormLabel className="text-base">Archive Case</FormLabel>
+                  <p className="text-sm text-muted-foreground">Move this case to the archive</p>
+                </div>
+                <FormControl>
+                  <Switch checked={field.value} onCheckedChange={field.onChange} />
+                </FormControl>
+              </FormItem>
+            )} />
 
-            <FormField
-              control={form.control}
-              name="notes"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Notes</FormLabel>
-                  <FormControl>
-                    <Textarea 
-                      placeholder="Additional notes..." 
-                      className="min-h-[80px]"
-                      {...field} 
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <FormField control={form.control} name="description" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Description</FormLabel>
+                <FormControl>
+                  <Textarea placeholder="Brief description of the case..." className="min-h-[80px]" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+
+            <FormField control={form.control} name="notes" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Notes</FormLabel>
+                <FormControl>
+                  <Textarea placeholder="Additional notes..." className="min-h-[80px]" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
 
             <div className="flex justify-end gap-3 pt-4">
-              <Button type="button" variant="outline" onClick={onClose}>
-                Cancel
-              </Button>
-              <Button type="submit">
-                {mode === 'add' ? 'Add Case' : 'Save Changes'}
-              </Button>
+              <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+              <Button type="submit">{mode === 'add' ? 'Add Case' : 'Save Changes'}</Button>
             </div>
           </form>
         </Form>
