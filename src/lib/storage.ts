@@ -1,9 +1,21 @@
 import { LegalCase } from '@/types/case';
 
 const STORAGE_KEY = 'legal_cases';
+const SCHEMA_KEY = 'legal_cases_schema_version';
+/** Bump when the LegalCase shape changes in an incompatible way. */
+const CURRENT_SCHEMA = 2;
+
+const ensureSchema = () => {
+  const v = localStorage.getItem(SCHEMA_KEY);
+  if (v !== String(CURRENT_SCHEMA)) {
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.setItem(SCHEMA_KEY, String(CURRENT_SCHEMA));
+  }
+};
 
 export const getCases = (): LegalCase[] => {
   try {
+    ensureSchema();
     const data = localStorage.getItem(STORAGE_KEY);
     return data ? JSON.parse(data) : [];
   } catch (error) {
@@ -14,6 +26,7 @@ export const getCases = (): LegalCase[] => {
 
 export const saveCases = (cases: LegalCase[]): void => {
   try {
+    ensureSchema();
     localStorage.setItem(STORAGE_KEY, JSON.stringify(cases));
   } catch (error) {
     console.error('Error saving cases to storage:', error);
