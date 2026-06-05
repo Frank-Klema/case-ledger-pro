@@ -5,7 +5,7 @@
  */
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { LegalCase, CaseFormData } from '@/types/case';
+import { LegalCase, CaseFormData, CaseLog } from '@/types/case';
 import { getCases, saveCases } from '@/lib/storage';
 
 /**
@@ -55,6 +55,7 @@ export const useCases = () => {
       judgmentCollected: data.judgmentCollected ?? false,
       lastCounsel: data.lastCounsel ?? '',
       isArchived: data.isArchived ?? false,
+      logs: data.logs ?? [],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       deletedAt: null,
@@ -177,6 +178,7 @@ export const useCases = () => {
       judgmentCollected: data.judgmentCollected ?? false,
       lastCounsel: data.lastCounsel ?? '',
       isArchived: data.isArchived ?? false,
+      logs: data.logs ?? [],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       deletedAt: null,
@@ -188,6 +190,33 @@ export const useCases = () => {
       return updated;
     });
     return newCases.length;
+  }, []);
+
+  /** Append a log entry (adjournment, indorsement, or note) to a case. */
+  const addCaseLog = useCallback((id: string, entry: Omit<CaseLog, 'id' | 'createdAt'>) => {
+    setAllCases(prev => {
+      const updated = prev.map(c => {
+        if (c.id !== id) return c;
+        const log: CaseLog = {
+          ...entry,
+          id: crypto.randomUUID(),
+          createdAt: new Date().toISOString(),
+        };
+        const newLastCounsel = entry.counsel || c.lastCounsel;
+        const newNextHearing = entry.type === 'adjournment' && entry.adjournedTo
+          ? entry.adjournedTo
+          : c.nextHearing;
+        return {
+          ...c,
+          logs: [log, ...(c.logs ?? [])],
+          lastCounsel: newLastCounsel,
+          nextHearing: newNextHearing,
+          updatedAt: new Date().toISOString(),
+        };
+      });
+      saveCases(updated);
+      return updated;
+    });
   }, []);
 
   /**
@@ -259,5 +288,6 @@ export const useCases = () => {
     importCases,
     archiveCase,
     unarchiveCase,
+    addCaseLog,
   };
 };
