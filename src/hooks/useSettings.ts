@@ -5,7 +5,6 @@ export type Theme = 'light' | 'dark' | 'system' | 'ocean' | 'forest' | 'sunset' 
 
 const PRESET_THEMES: Theme[] = ['ocean', 'forest', 'sunset', 'rose', 'midnight'];
 const ALL_PRESET_CLASSES = PRESET_THEMES.map(t => `theme-${t}`);
-const DARK_PRESETS: Theme[] = ['ocean', 'forest', 'midnight'];
 
 export type CasesPerPage = 10 | 15 | 25 | 50;
 
@@ -37,18 +36,19 @@ export const useSettings = () => {
     return stored ? { ...defaultSettings, ...JSON.parse(stored) } : defaultSettings;
   });
 
-  // Apply theme
+  // Apply theme — preset themes ship their own background/foreground tokens,
+  // so we deliberately strip the `.dark` class when one is active. Otherwise
+  // the generic `.dark` rules would override the preset colours.
   useEffect(() => {
     const root = document.documentElement;
-    // Clear any preset classes
     root.classList.remove(...ALL_PRESET_CLASSES);
 
     if (settings.theme === 'system') {
       const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
       root.classList.toggle('dark', systemDark);
     } else if (PRESET_THEMES.includes(settings.theme)) {
+      root.classList.remove('dark');
       root.classList.add(`theme-${settings.theme}`);
-      root.classList.toggle('dark', DARK_PRESETS.includes(settings.theme));
     } else {
       root.classList.toggle('dark', settings.theme === 'dark');
     }

@@ -333,7 +333,7 @@ const Index = () => {
               ...(prev.logs ?? []),
             ],
             lastCounsel: entry.counsel || prev.lastCounsel,
-            nextHearing: entry.type === 'adjournment' && entry.adjournedTo ? entry.adjournedTo : prev.nextHearing,
+            nextHearing: entry.adjournedTo ? entry.adjournedTo : prev.nextHearing,
           } : prev);
         }}
       />

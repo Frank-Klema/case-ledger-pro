@@ -30,25 +30,30 @@ const LOG_TYPE_LABELS: Record<CaseLogType, string> = {
   note: 'Note',
 };
 
+/**
+ * Read-only detail view for a single case. Also hosts the Case Log editor:
+ * a quick form to record what happened on a given court date (adjournment,
+ * indorsement, or both) and an optional "Adjourned Date". Whenever an
+ * Adjourned Date is entered, the case's Next Hearing is updated to match —
+ * see `addCaseLog` in `useCases.ts`.
+ */
 export const CaseDetail = ({ open, onClose, caseItem, onEdit, onAddLog }: CaseDetailProps) => {
   const { counsels, addCounsel } = useCounsels();
   const [showLogForm, setShowLogForm] = useState(false);
-  const [logDate, setLogDate] = useState(new Date().toISOString().slice(0, 10));
   const [logAdjournment, setLogAdjournment] = useState(false);
   const [logIndorsement, setLogIndorsement] = useState(false);
   const [logCounsel, setLogCounsel] = useState('');
-  const [logAdjournedTo, setLogAdjournedTo] = useState('');
+  const [logAdjournedDate, setLogAdjournedDate] = useState('');
   const [logNote, setLogNote] = useState('');
 
   if (!caseItem) return null;
 
   const resetLogForm = () => {
     setShowLogForm(false);
-    setLogDate(new Date().toISOString().slice(0, 10));
     setLogAdjournment(false);
     setLogIndorsement(false);
     setLogCounsel('');
-    setLogAdjournedTo('');
+    setLogAdjournedDate('');
     setLogNote('');
   };
 
@@ -59,13 +64,18 @@ export const CaseDetail = ({ open, onClose, caseItem, onEdit, onAddLog }: CaseDe
     if (logAdjournment) types.push('adjournment');
     if (logIndorsement) types.push('indorsement');
     if (types.length === 0) types.push('note');
+    // `date` is the chronological anchor for the entry — use the adjourned
+    // date when provided, otherwise default to today so the log still has a
+    // stable ordering value.
+    const anchor = logAdjournedDate || new Date().toISOString().slice(0, 10);
     onAddLog(caseItem.id, {
-      date: logDate,
+      date: anchor,
       type: types[0],
       types,
       counsel: logCounsel,
       note: logNote,
-      adjournedTo: logAdjournment ? logAdjournedTo : undefined,
+      // The single Adjourned Date — when present, becomes the case's next hearing.
+      adjournedTo: logAdjournedDate || undefined,
     });
     resetLogForm();
   };
@@ -93,7 +103,7 @@ export const CaseDetail = ({ open, onClose, caseItem, onEdit, onAddLog }: CaseDe
             <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
               <User className="h-5 w-5 text-primary mt-0.5" />
               <div>
-                <p className="text-sm text-muted-foreground">Judgment Creditor</p>
+                <p className="text-sm text-muted-foreground">Order Creditor</p>
                 <p className="font-medium">{caseItem.judgmentCreditor || '-'}</p>
               </div>
             </div>
@@ -101,7 +111,7 @@ export const CaseDetail = ({ open, onClose, caseItem, onEdit, onAddLog }: CaseDe
             <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
               <Users className="h-5 w-5 text-muted-foreground mt-0.5" />
               <div>
-                <p className="text-sm text-muted-foreground">Judgment Debtor</p>
+                <p className="text-sm text-muted-foreground">Order Debtor</p>
                 <p className="font-medium">{caseItem.judgmentDebtor || '-'}</p>
               </div>
             </div>
@@ -133,7 +143,7 @@ export const CaseDetail = ({ open, onClose, caseItem, onEdit, onAddLog }: CaseDe
             <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
               <Calendar className="h-5 w-5 text-muted-foreground mt-0.5" />
               <div>
-                <p className="text-sm text-muted-foreground">Filing Date</p>
+                <p className="text-sm text-muted-foreground">Date Filed</p>
                 <p className="font-medium">{formatDate(caseItem.filingDate)}</p>
               </div>
             </div>
@@ -158,7 +168,7 @@ export const CaseDetail = ({ open, onClose, caseItem, onEdit, onAddLog }: CaseDe
           <div className="flex items-center gap-3 p-3 rounded-lg border border-border">
             <div className={`h-3 w-3 rounded-full ${caseItem.judgmentCollected ? 'bg-success' : 'bg-warning'}`} />
             <p className="font-medium">
-              {caseItem.judgmentCollected ? 'Judgment/Order Collected' : 'Judgment/Order Not Yet Collected'}
+              {caseItem.judgmentCollected ? 'Order Collected' : 'Order Not Yet Collected'}
             </p>
           </div>
 
@@ -196,8 +206,17 @@ export const CaseDetail = ({ open, onClose, caseItem, onEdit, onAddLog }: CaseDe
               <div className="space-y-3 rounded-lg border border-border p-3">
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div>
-                    <label className="text-xs text-muted-foreground">Date</label>
-                    <Input type="date" value={logDate} onChange={(e) => setLogDate(e.target.value)} />
+                    <label className="text-xs text-muted-foreground">
+                      Adjourned Date <span className="opacity-70">(optional)</span>
+                    </label>
+                    <Input
+                      type="date"
+                      value={logAdjournedDate}
+                      onChange={(e) => setLogAdjournedDate(e.target.value)}
+                    />
+                    <p className="text-[11px] text-muted-foreground mt-1">
+                      If set, this becomes the case's new Next Hearing.
+                    </p>
                   </div>
                   <div>
                     <label className="text-xs text-muted-foreground">Counsel on this date</label>
@@ -213,7 +232,6 @@ export const CaseDetail = ({ open, onClose, caseItem, onEdit, onAddLog }: CaseDe
                   </div>
                 </div>
                 <div>
-                  <label className="text-xs text-muted-foreground mb-2 block">Entry covers (select any that apply)</label>
                   <div className="flex flex-wrap gap-4">
                     <label className="flex items-center gap-2 text-sm">
                       <Checkbox checked={logAdjournment} onCheckedChange={(c) => setLogAdjournment(!!c)} />
@@ -225,12 +243,6 @@ export const CaseDetail = ({ open, onClose, caseItem, onEdit, onAddLog }: CaseDe
                     </label>
                   </div>
                 </div>
-                {logAdjournment && (
-                  <div>
-                    <label className="text-xs text-muted-foreground">Adjourned to</label>
-                    <Input type="date" value={logAdjournedTo} onChange={(e) => setLogAdjournedTo(e.target.value)} />
-                  </div>
-                )}
                 <div>
                   <label className="text-xs text-muted-foreground">
                     {logIndorsement ? 'Indorsement / Note' : 'Note'}
@@ -272,7 +284,7 @@ export const CaseDetail = ({ open, onClose, caseItem, onEdit, onAddLog }: CaseDe
                         </span>
                       )}
                     </div>
-                    {types.includes('adjournment') && log.adjournedTo && (
+                    {log.adjournedTo && (
                       <p className="text-sm text-muted-foreground">
                         Adjourned to <span className="font-medium text-foreground">{formatDate(log.adjournedTo)}</span>
                       </p>

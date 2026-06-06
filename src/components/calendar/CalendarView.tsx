@@ -220,52 +220,6 @@ export const CalendarView = ({ cases, onViewCase, onAddCase }: CalendarViewProps
         </Card>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Upcoming Hearings</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {events.filter((e) => e.date >= new Date() && e.type === 'hearing').length > 0 ? (
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {events
-                .filter((e) => e.date >= new Date() && e.type === 'hearing')
-                .slice(0, 6)
-                .map((event) => (
-                  <button
-                    key={event.id}
-                    onClick={() => handleEventClick(event)}
-                    className={cn(
-                      'text-left p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors border-l-4',
-                      getPriorityColor(event.priority)
-                    )}
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">{event.caseNumber}</p>
-                        <p className="text-sm text-muted-foreground truncate">{event.title}</p>
-                      </div>
-                      <Badge variant="secondary" className={cn('shrink-0', getEventBadgeColor(event.type))}>
-                        Hearing
-                      </Badge>
-                    </div>
-                    <div className="mt-3 space-y-1">
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <CalendarIcon className="h-3.5 w-3.5" /> {formatDate(event.date)}
-                      </div>
-                      {event.court && (
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <MapPin className="h-3.5 w-3.5" /> {event.court}
-                        </div>
-                      )}
-                    </div>
-                  </button>
-                ))}
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground">No upcoming hearings</p>
-          )}
-        </CardContent>
-      </Card>
     </div>
   );
 };
