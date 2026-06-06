@@ -203,10 +203,10 @@ export const CaseList = ({
               <SelectItem value="caseNumber">Case Number</SelectItem>
               <SelectItem value="title">Title</SelectItem>
               <SelectItem value="garnishee">Garnishee</SelectItem>
-              <SelectItem value="judgmentCreditor">Judgment Creditor</SelectItem>
+              <SelectItem value="judgmentCreditor">Order Creditor</SelectItem>
               <SelectItem value="court">Court</SelectItem>
               <SelectItem value="nextHearing">Next Hearing</SelectItem>
-              <SelectItem value="filingDate">Filing Date</SelectItem>
+              <SelectItem value="filingDate">Date Filed</SelectItem>
             </SelectContent>
           </Select>
           <Button
@@ -245,7 +245,7 @@ export const CaseList = ({
               <SortableHeader field="court">Court</SortableHeader>
               <TableHead className="font-semibold">Status</TableHead>
               {!showArchived && <TableHead className="font-semibold">Priority</TableHead>}
-              <TableHead className="font-semibold">Judgment</TableHead>
+              <TableHead className="font-semibold">Order</TableHead>
               {!showArchived && <SortableHeader field="nextHearing">Next Hearing</SortableHeader>}
               <TableHead className="w-[50px]"></TableHead>
             </TableRow>
