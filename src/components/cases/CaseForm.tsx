@@ -219,16 +219,16 @@ export const CaseForm = ({ open, onClose, onSubmit, initialData, mode, defaultNe
 
               <FormField control={form.control} name="judgmentCreditor" render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Judgment Creditor</FormLabel>
-                  <FormControl><Input placeholder="Judgment creditor" {...field} /></FormControl>
+                  <FormLabel>Order Creditor</FormLabel>
+                  <FormControl><Input placeholder="Order creditor" {...field} /></FormControl>
                   <FormMessage />
                 </FormItem>
               )} />
 
               <FormField control={form.control} name="judgmentDebtor" render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Judgment Debtor</FormLabel>
-                  <FormControl><Input placeholder="Judgment debtor" {...field} /></FormControl>
+                  <FormLabel>Order Debtor</FormLabel>
+                  <FormControl><Input placeholder="Order debtor" {...field} /></FormControl>
                   <FormMessage />
                 </FormItem>
               )} />
@@ -272,7 +272,7 @@ export const CaseForm = ({ open, onClose, onSubmit, initialData, mode, defaultNe
 
               <FormField control={form.control} name="filingDate" render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Filing Date</FormLabel>
+                  <FormLabel>Date Filed</FormLabel>
                   <FormControl><Input type="date" {...field} /></FormControl>
                   <FormMessage />
                 </FormItem>
@@ -331,9 +331,9 @@ export const CaseForm = ({ open, onClose, onSubmit, initialData, mode, defaultNe
             <FormField control={form.control} name="judgmentCollected" render={({ field }) => (
               <FormItem className="flex flex-row items-center justify-between rounded-lg border border-border p-4">
                 <div className="space-y-0.5">
-                  <FormLabel className="text-base">Judgment/Order Collected</FormLabel>
+                  <FormLabel className="text-base">Order Collected</FormLabel>
                   <p className="text-sm text-muted-foreground">
-                    Mark if copy of judgment or court order has been collected
+                    Mark if a copy of the court order has been collected
                   </p>
                 </div>
                 <FormControl>
