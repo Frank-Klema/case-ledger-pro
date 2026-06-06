@@ -34,8 +34,6 @@ export const Dashboard = ({
     .sort((a, b) => new Date(a.nextHearing).getTime() - new Date(b.nextHearing).getTime())
     .slice(0, 5);
 
-  const pendingCases = cases.filter(c => c.status === 'pending' && !c.isArchived).slice(0, 5);
-
   return (
     <div className="space-y-6">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -45,7 +43,7 @@ export const Dashboard = ({
         <StatsCard title="Urgent Cases" value={stats.urgent} icon={AlertTriangle} variant="destructive" onClick={() => onFilterSelect?.('urgent')} />
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-6 lg:grid-cols-2">
         <div className="rounded-xl border border-border bg-card p-5 shadow-sm animate-slide-up">
           <h3 className="font-heading text-lg font-semibold text-foreground mb-4">Upcoming Hearings</h3>
           <div className="space-y-3">
@@ -65,32 +63,6 @@ export const Dashboard = ({
                   <div className="text-right">
                     <p className="text-sm font-medium text-foreground">{formatDate(c.nextHearing)}</p>
                     <p className="text-xs text-muted-foreground">Next Hearing</p>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-
-        <div className="rounded-xl border border-border bg-card p-5 shadow-sm animate-slide-up">
-          <h3 className="font-heading text-lg font-semibold text-foreground mb-4">Pending Cases</h3>
-          <div className="space-y-3">
-            {pendingCases.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4">No pending cases</p>
-            ) : (
-              pendingCases.map(c => (
-                <div
-                  key={c.id}
-                  className="flex items-center justify-between rounded-lg bg-muted/50 p-3 cursor-pointer hover:bg-muted/70 transition-colors"
-                  onClick={() => onCaseClick?.(c)}
-                >
-                  <div>
-                    <p className="font-medium text-foreground">{c.title}</p>
-                    <p className="text-sm text-muted-foreground">{c.caseNumber} • {c.garnishee || c.judgmentCreditor}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-medium text-warning">{c.priority}</p>
-                    <p className="text-xs text-muted-foreground">Pending</p>
                   </div>
                 </div>
               ))
