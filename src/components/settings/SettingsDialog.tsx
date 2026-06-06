@@ -3,7 +3,7 @@
  */
 
 import { useState } from 'react';
-import { Settings, Moon, Sun, Monitor, Type, LayoutGrid, List, UserCheck, Plus, X } from 'lucide-react';
+import { Settings, Moon, Sun, Monitor, Type, LayoutGrid, List, UserCheck, Plus, X, Waves, Trees, Sunset, Flower2, Sparkles, Gavel, Building, Scale } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -18,12 +18,18 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useSettings, Theme, FontSize, CasesPerPage } from '@/hooks/useSettings';
 import { useCounsels } from '@/hooks/useCounsels';
+import { useGarnishees, useCourts, useJudges } from '@/hooks/useLists';
 import { cn } from '@/lib/utils';
 
 const themes: { value: Theme; label: string; icon: typeof Sun }[] = [
   { value: 'light', label: 'Light', icon: Sun },
   { value: 'dark', label: 'Dark', icon: Moon },
   { value: 'system', label: 'System', icon: Monitor },
+  { value: 'ocean', label: 'Ocean', icon: Waves },
+  { value: 'forest', label: 'Forest', icon: Trees },
+  { value: 'midnight', label: 'Midnight', icon: Sparkles },
+  { value: 'sunset', label: 'Sunset', icon: Sunset },
+  { value: 'rose', label: 'Rose', icon: Flower2 },
 ];
 
 const fontSizes: { value: FontSize; label: string; sample: string }[] = [
@@ -42,7 +48,13 @@ const casesPerPageOptions: { value: CasesPerPage; label: string }[] = [
 export const SettingsDialog = () => {
   const { settings, updateSettings, resetSettings } = useSettings();
   const { counsels, addCounsel, removeCounsel } = useCounsels();
+  const garnishees = useGarnishees();
+  const courts = useCourts();
+  const judges = useJudges();
   const [newCounsel, setNewCounsel] = useState('');
+  const [newGarnishee, setNewGarnishee] = useState('');
+  const [newCourt, setNewCourt] = useState('');
+  const [newJudge, setNewJudge] = useState('');
 
   return (
     <Dialog>
