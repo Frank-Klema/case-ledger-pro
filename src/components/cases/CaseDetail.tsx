@@ -11,7 +11,8 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import { Calendar, User, Users, Building, Scale, UserCheck, Clock, Gavel, ClipboardList, Plus } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Calendar, User, Users, Building, Scale, UserCheck, Gavel, ClipboardList, Plus } from 'lucide-react';
 import { formatDate, formatDateTime } from '@/lib/date';
 import { useCounsels } from '@/hooks/useCounsels';
 
@@ -33,7 +34,8 @@ export const CaseDetail = ({ open, onClose, caseItem, onEdit, onAddLog }: CaseDe
   const { counsels, addCounsel } = useCounsels();
   const [showLogForm, setShowLogForm] = useState(false);
   const [logDate, setLogDate] = useState(new Date().toISOString().slice(0, 10));
-  const [logType, setLogType] = useState<CaseLogType>('adjournment');
+  const [logAdjournment, setLogAdjournment] = useState(false);
+  const [logIndorsement, setLogIndorsement] = useState(false);
   const [logCounsel, setLogCounsel] = useState('');
   const [logAdjournedTo, setLogAdjournedTo] = useState('');
   const [logNote, setLogNote] = useState('');
@@ -43,7 +45,8 @@ export const CaseDetail = ({ open, onClose, caseItem, onEdit, onAddLog }: CaseDe
   const resetLogForm = () => {
     setShowLogForm(false);
     setLogDate(new Date().toISOString().slice(0, 10));
-    setLogType('adjournment');
+    setLogAdjournment(false);
+    setLogIndorsement(false);
     setLogCounsel('');
     setLogAdjournedTo('');
     setLogNote('');
@@ -52,12 +55,17 @@ export const CaseDetail = ({ open, onClose, caseItem, onEdit, onAddLog }: CaseDe
   const submitLog = () => {
     if (!onAddLog) return;
     if (logCounsel) addCounsel(logCounsel);
+    const types: CaseLogType[] = [];
+    if (logAdjournment) types.push('adjournment');
+    if (logIndorsement) types.push('indorsement');
+    if (types.length === 0) types.push('note');
     onAddLog(caseItem.id, {
       date: logDate,
-      type: logType,
+      type: types[0],
+      types,
       counsel: logCounsel,
       note: logNote,
-      adjournedTo: logType === 'adjournment' ? logAdjournedTo : undefined,
+      adjournedTo: logAdjournment ? logAdjournedTo : undefined,
     });
     resetLogForm();
   };
@@ -139,14 +147,6 @@ export const CaseDetail = ({ open, onClose, caseItem, onEdit, onAddLog }: CaseDe
             </div>
 
             <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 sm:col-span-2">
-              <Clock className="h-5 w-5 text-muted-foreground mt-0.5" />
-              <div>
-                <p className="text-sm text-muted-foreground">Garnishee Deadline</p>
-                <p className="font-medium">{formatDate(caseItem.garnisheeDeadline)}</p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 sm:col-span-2">
               <UserCheck className="h-5 w-5 text-muted-foreground mt-0.5" />
               <div>
                 <p className="text-sm text-muted-foreground">Last Counsel (handled on last date)</p>
@@ -200,17 +200,6 @@ export const CaseDetail = ({ open, onClose, caseItem, onEdit, onAddLog }: CaseDe
                     <Input type="date" value={logDate} onChange={(e) => setLogDate(e.target.value)} />
                   </div>
                   <div>
-                    <label className="text-xs text-muted-foreground">Type</label>
-                    <Select value={logType} onValueChange={(v) => setLogType(v as CaseLogType)}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="adjournment">Adjournment</SelectItem>
-                        <SelectItem value="indorsement">Indorsement</SelectItem>
-                        <SelectItem value="note">Note</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
                     <label className="text-xs text-muted-foreground">Counsel on this date</label>
                     <Select value={logCounsel || undefined} onValueChange={setLogCounsel}>
                       <SelectTrigger><SelectValue placeholder="Select counsel" /></SelectTrigger>
@@ -222,19 +211,32 @@ export const CaseDetail = ({ open, onClose, caseItem, onEdit, onAddLog }: CaseDe
                       </SelectContent>
                     </Select>
                   </div>
-                  {logType === 'adjournment' && (
-                    <div>
-                      <label className="text-xs text-muted-foreground">Adjourned to</label>
-                      <Input type="date" value={logAdjournedTo} onChange={(e) => setLogAdjournedTo(e.target.value)} />
-                    </div>
-                  )}
                 </div>
                 <div>
+                  <label className="text-xs text-muted-foreground mb-2 block">Entry covers (select any that apply)</label>
+                  <div className="flex flex-wrap gap-4">
+                    <label className="flex items-center gap-2 text-sm">
+                      <Checkbox checked={logAdjournment} onCheckedChange={(c) => setLogAdjournment(!!c)} />
+                      Adjournment
+                    </label>
+                    <label className="flex items-center gap-2 text-sm">
+                      <Checkbox checked={logIndorsement} onCheckedChange={(c) => setLogIndorsement(!!c)} />
+                      Indorsement
+                    </label>
+                  </div>
+                </div>
+                {logAdjournment && (
+                  <div>
+                    <label className="text-xs text-muted-foreground">Adjourned to</label>
+                    <Input type="date" value={logAdjournedTo} onChange={(e) => setLogAdjournedTo(e.target.value)} />
+                  </div>
+                )}
+                <div>
                   <label className="text-xs text-muted-foreground">
-                    {logType === 'indorsement' ? 'Indorsement' : 'Note'}
+                    {logIndorsement ? 'Indorsement / Note' : 'Note'}
                   </label>
                   <Textarea
-                    placeholder={logType === 'indorsement' ? "Court's indorsement on the case file..." : 'Notes...'}
+                    placeholder={logIndorsement ? "Court's indorsement on the case file..." : 'Notes...'}
                     value={logNote}
                     onChange={(e) => setLogNote(e.target.value)}
                     className="min-h-[60px]"
@@ -251,12 +253,15 @@ export const CaseDetail = ({ open, onClose, caseItem, onEdit, onAddLog }: CaseDe
               <p className="text-sm text-muted-foreground italic">No log entries yet.</p>
             ) : (
               <div className="space-y-2">
-                {logs.map((log) => (
+                {logs.map((log) => {
+                  const types = log.types && log.types.length > 0 ? log.types : [log.type];
+                  const label = types.map(t => LOG_TYPE_LABELS[t]).join(' + ');
+                  return (
                   <div key={log.id} className="rounded-lg border border-border p-3 bg-muted/30">
                     <div className="flex items-center justify-between gap-2 mb-1">
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-semibold uppercase tracking-wide text-primary">
-                          {LOG_TYPE_LABELS[log.type]}
+                          {label}
                         </span>
                         <span className="text-sm font-medium">{formatDate(log.date)}</span>
                       </div>
@@ -267,7 +272,7 @@ export const CaseDetail = ({ open, onClose, caseItem, onEdit, onAddLog }: CaseDe
                         </span>
                       )}
                     </div>
-                    {log.type === 'adjournment' && log.adjournedTo && (
+                    {types.includes('adjournment') && log.adjournedTo && (
                       <p className="text-sm text-muted-foreground">
                         Adjourned to <span className="font-medium text-foreground">{formatDate(log.adjournedTo)}</span>
                       </p>
@@ -276,7 +281,8 @@ export const CaseDetail = ({ open, onClose, caseItem, onEdit, onAddLog }: CaseDe
                       <p className="text-sm whitespace-pre-wrap mt-1">{log.note}</p>
                     )}
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
