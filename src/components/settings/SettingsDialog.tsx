@@ -3,7 +3,7 @@
  */
 
 import { useState } from 'react';
-import { Settings, Moon, Sun, Monitor, Type, LayoutGrid, List, UserCheck, Plus, X } from 'lucide-react';
+import { Settings, Moon, Sun, Monitor, Type, LayoutGrid, List, UserCheck, Plus, X, Waves, Trees, Sunset, Flower2, Sparkles, Gavel, Building, Scale } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -18,12 +18,18 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useSettings, Theme, FontSize, CasesPerPage } from '@/hooks/useSettings';
 import { useCounsels } from '@/hooks/useCounsels';
+import { useGarnishees, useCourts, useJudges } from '@/hooks/useLists';
 import { cn } from '@/lib/utils';
 
 const themes: { value: Theme; label: string; icon: typeof Sun }[] = [
   { value: 'light', label: 'Light', icon: Sun },
   { value: 'dark', label: 'Dark', icon: Moon },
   { value: 'system', label: 'System', icon: Monitor },
+  { value: 'ocean', label: 'Ocean', icon: Waves },
+  { value: 'forest', label: 'Forest', icon: Trees },
+  { value: 'midnight', label: 'Midnight', icon: Sparkles },
+  { value: 'sunset', label: 'Sunset', icon: Sunset },
+  { value: 'rose', label: 'Rose', icon: Flower2 },
 ];
 
 const fontSizes: { value: FontSize; label: string; sample: string }[] = [
@@ -42,7 +48,13 @@ const casesPerPageOptions: { value: CasesPerPage; label: string }[] = [
 export const SettingsDialog = () => {
   const { settings, updateSettings, resetSettings } = useSettings();
   const { counsels, addCounsel, removeCounsel } = useCounsels();
+  const garnishees = useGarnishees();
+  const courts = useCourts();
+  const judges = useJudges();
   const [newCounsel, setNewCounsel] = useState('');
+  const [newGarnishee, setNewGarnishee] = useState('');
+  const [newCourt, setNewCourt] = useState('');
+  const [newJudge, setNewJudge] = useState('');
 
   return (
     <Dialog>
@@ -239,6 +251,61 @@ export const SettingsDialog = () => {
               </div>
             )}
           </div>
+
+          {/* Garnishees / Courts / Judges managers */}
+          {([
+            { label: 'Garnishees', icon: Gavel, list: garnishees, value: newGarnishee, set: setNewGarnishee },
+            { label: 'Courts', icon: Building, list: courts, value: newCourt, set: setNewCourt },
+            { label: 'Judges', icon: Scale, list: judges, value: newJudge, set: setNewJudge },
+          ] as const).map(({ label, icon: Icon, list, value, set }) => (
+            <div key={label} className="space-y-3 pt-2 border-t border-border">
+              <div className="flex items-center gap-2">
+                <Icon className="h-4 w-4 text-muted-foreground" />
+                <Label className="text-sm font-medium">{label}</Label>
+              </div>
+              <div className="flex gap-2">
+                <Input
+                  placeholder={`New ${label.toLowerCase().slice(0, -1)} name`}
+                  value={value}
+                  onChange={(e) => set(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      list.add(value);
+                      set('');
+                    }
+                  }}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => { list.add(value); set(''); }}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+              {list.items.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {list.items.map(c => (
+                    <span
+                      key={c}
+                      className="inline-flex items-center gap-1 rounded-full bg-muted px-3 py-1 text-xs"
+                    >
+                      {c}
+                      <button
+                        type="button"
+                        onClick={() => list.remove(c)}
+                        className="text-muted-foreground hover:text-destructive"
+                        aria-label={`Remove ${c}`}
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       </DialogContent>
     </Dialog>

@@ -232,7 +232,7 @@ const Index = () => {
             </TabsTrigger>
             <TabsTrigger value="pendingJudgment" className="gap-2">
               <FileX className="h-4 w-4" />
-              Judgments/Rulings to Collect
+              Garnishee Orders to Collect
               {pendingJudgmentCases.length > 0 && (
                 <span className="ml-1 rounded-full bg-warning/20 px-2 py-0.5 text-xs text-warning">
                   {pendingJudgmentCases.length}

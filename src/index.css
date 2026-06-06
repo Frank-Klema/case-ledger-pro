@@ -145,6 +145,107 @@
     --shadow-xl: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 8px 10px -1px hsl(0 0% 0% / 0.1);
     --shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.25);
   }
+
+  /* === Theme presets — override key tokens on top of base or .dark === */
+  .theme-ocean {
+    --background: 210 45% 8%;
+    --foreground: 200 30% 96%;
+    --card: 210 40% 12%;
+    --card-foreground: 200 30% 96%;
+    --popover: 210 40% 14%;
+    --popover-foreground: 200 30% 96%;
+    --primary: 195 85% 55%;
+    --primary-foreground: 210 45% 8%;
+    --secondary: 210 30% 25%;
+    --secondary-foreground: 200 30% 96%;
+    --muted: 210 25% 22%;
+    --muted-foreground: 200 20% 75%;
+    --accent: 190 80% 35%;
+    --accent-foreground: 200 30% 96%;
+    --border: 210 30% 22%;
+    --input: 210 30% 22%;
+    --ring: 195 85% 55%;
+  }
+
+  .theme-forest {
+    --background: 150 20% 8%;
+    --foreground: 140 20% 95%;
+    --card: 150 18% 12%;
+    --card-foreground: 140 20% 95%;
+    --popover: 150 18% 14%;
+    --popover-foreground: 140 20% 95%;
+    --primary: 142 65% 50%;
+    --primary-foreground: 150 20% 8%;
+    --secondary: 150 15% 25%;
+    --secondary-foreground: 140 20% 95%;
+    --muted: 150 12% 22%;
+    --muted-foreground: 140 15% 75%;
+    --accent: 160 50% 35%;
+    --accent-foreground: 140 20% 95%;
+    --border: 150 15% 22%;
+    --input: 150 15% 22%;
+    --ring: 142 65% 50%;
+  }
+
+  .theme-midnight {
+    --background: 240 30% 6%;
+    --foreground: 240 20% 95%;
+    --card: 240 28% 10%;
+    --card-foreground: 240 20% 95%;
+    --popover: 240 28% 12%;
+    --popover-foreground: 240 20% 95%;
+    --primary: 270 90% 70%;
+    --primary-foreground: 240 30% 6%;
+    --secondary: 240 20% 22%;
+    --secondary-foreground: 240 20% 95%;
+    --muted: 240 18% 20%;
+    --muted-foreground: 240 15% 75%;
+    --accent: 290 70% 55%;
+    --accent-foreground: 240 20% 95%;
+    --border: 240 20% 20%;
+    --input: 240 20% 20%;
+    --ring: 270 90% 70%;
+  }
+
+  .theme-sunset {
+    --background: 30 50% 96%;
+    --foreground: 20 40% 15%;
+    --card: 30 60% 99%;
+    --card-foreground: 20 40% 15%;
+    --popover: 30 60% 99%;
+    --popover-foreground: 20 40% 15%;
+    --primary: 18 85% 55%;
+    --primary-foreground: 30 60% 98%;
+    --secondary: 25 40% 88%;
+    --secondary-foreground: 20 40% 15%;
+    --muted: 30 30% 88%;
+    --muted-foreground: 20 25% 35%;
+    --accent: 35 90% 60%;
+    --accent-foreground: 20 40% 15%;
+    --border: 25 30% 82%;
+    --input: 25 30% 82%;
+    --ring: 18 85% 55%;
+  }
+
+  .theme-rose {
+    --background: 340 40% 97%;
+    --foreground: 340 30% 18%;
+    --card: 340 50% 99%;
+    --card-foreground: 340 30% 18%;
+    --popover: 340 50% 99%;
+    --popover-foreground: 340 30% 18%;
+    --primary: 340 80% 55%;
+    --primary-foreground: 340 60% 98%;
+    --secondary: 340 30% 90%;
+    --secondary-foreground: 340 30% 18%;
+    --muted: 340 25% 90%;
+    --muted-foreground: 340 20% 35%;
+    --accent: 320 70% 65%;
+    --accent-foreground: 340 60% 98%;
+    --border: 340 25% 85%;
+    --input: 340 25% 85%;
+    --ring: 340 80% 55%;
+  }
 }
 
 @layer base {

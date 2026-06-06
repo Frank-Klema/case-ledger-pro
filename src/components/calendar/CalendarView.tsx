@@ -38,18 +38,6 @@ export const CalendarView = ({ cases, onViewCase, onAddCase }: CalendarViewProps
           court: c.court,
         });
       }
-      if (c.garnisheeDeadline) {
-        all.push({
-          id: `garnishee-${c.id}`,
-          caseId: c.id,
-          caseNumber: c.caseNumber,
-          title: `Garnishee: ${c.title}`,
-          date: parseISO(c.garnisheeDeadline),
-          type: 'garnishee-deadline',
-          priority: c.priority,
-          court: c.court,
-        });
-      }
     });
     return all.sort((a, b) => a.date.getTime() - b.date.getTime());
   }, [cases]);
@@ -113,16 +101,6 @@ export const CalendarView = ({ cases, onViewCase, onAddCase }: CalendarViewProps
         </div>
 
         <div className="flex items-center gap-2">
-          {onAddCase && (
-            <Button
-              variant="accent"
-              size="sm"
-              onClick={() => onAddCase(selectedDate ? format(selectedDate, 'yyyy-MM-dd') : undefined)}
-            >
-              <Plus className="h-4 w-4" />
-              Add Case
-            </Button>
-          )}
           <Tabs value={view} onValueChange={(v) => setView(v as 'month' | 'week')}>
             <TabsList>
               <TabsTrigger value="month">Month</TabsTrigger>
@@ -150,13 +128,13 @@ export const CalendarView = ({ cases, onViewCase, onAddCase }: CalendarViewProps
                     onClick={() => setSelectedDate(day)}
                     className={cn(
                       'min-h-[80px] sm:min-h-[100px] p-1 sm:p-2 border rounded-md transition-colors text-left',
-                      'hover:bg-muted/50 focus:outline-none focus:ring-2 focus:ring-accent',
+                      'hover:bg-muted/50 focus:outline-none focus:ring-2 focus:ring-primary',
                       !isCurrentMonth && 'bg-muted/30 text-muted-foreground',
-                      isToday(day) && 'border-accent border-2',
-                      isSelected && 'bg-accent/10 border-accent'
+                      isToday(day) && 'border-primary border-2 bg-primary/10',
+                      isSelected && 'bg-primary/15 border-primary'
                     )}
                   >
-                    <span className={cn('text-sm font-medium', isToday(day) && 'text-accent font-bold')}>
+                    <span className={cn('text-sm font-medium', isToday(day) && 'text-primary font-bold')}>
                       {format(day, 'd')}
                     </span>
                     <div className="mt-1 space-y-1">

@@ -18,6 +18,7 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { Plus } from 'lucide-react';
 import { useCounsels } from '@/hooks/useCounsels';
+import { useGarnishees, useCourts, useJudges } from '@/hooks/useLists';
 
 const caseSchema = z.object({
   caseNumber: z.string().min(1, 'Case number is required'),
@@ -70,7 +71,13 @@ interface CaseFormProps {
 
 export const CaseForm = ({ open, onClose, onSubmit, initialData, mode, defaultNextHearing }: CaseFormProps) => {
   const { counsels, addCounsel } = useCounsels();
+  const garnisheesList = useGarnishees();
+  const courtsList = useCourts();
+  const judgesList = useJudges();
   const [newCounsel, setNewCounsel] = useState('');
+  const [newGarnishee, setNewGarnishee] = useState('');
+  const [newCourt, setNewCourt] = useState('');
+  const [newJudge, setNewJudge] = useState('');
 
   const form = useForm<CaseFormData>({
     resolver: zodResolver(caseSchema),
@@ -104,10 +111,16 @@ export const CaseForm = ({ open, onClose, onSubmit, initialData, mode, defaultNe
       form.reset({ ...EMPTY, nextHearing: defaultNextHearing || '' });
     }
     setNewCounsel('');
+    setNewGarnishee('');
+    setNewCourt('');
+    setNewJudge('');
   }, [open, mode, initialData, defaultNextHearing, form]);
 
   const handleSubmit = (data: CaseFormData) => {
     if (data.lastCounsel) addCounsel(data.lastCounsel);
+    if (data.garnishee) garnisheesList.add(data.garnishee);
+    if (data.court) courtsList.add(data.court);
+    if (data.judge) judgesList.add(data.judge);
     onSubmit(data);
     form.reset(EMPTY);
     onClose();
@@ -120,6 +133,61 @@ export const CaseForm = ({ open, onClose, onSubmit, initialData, mode, defaultNe
     form.setValue('lastCounsel', name);
     setNewCounsel('');
   };
+
+  const renderManagedSelect = (
+    fieldName: 'garnishee' | 'court' | 'judge',
+    label: string,
+    placeholder: string,
+    list: { items: string[]; add: (n: string) => void },
+    newVal: string,
+    setNewVal: (v: string) => void,
+    colSpan = false,
+  ) => (
+    <FormField control={form.control} name={fieldName} render={({ field }) => (
+      <FormItem className={colSpan ? 'sm:col-span-2' : ''}>
+        <FormLabel>{label}</FormLabel>
+        <Select onValueChange={field.onChange} value={field.value || undefined}>
+          <FormControl><SelectTrigger><SelectValue placeholder={placeholder} /></SelectTrigger></FormControl>
+          <SelectContent>
+            {list.items.length === 0 && (
+              <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                No entries yet — add one below
+              </div>
+            )}
+            {list.items.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <div className="flex gap-2 mt-2">
+          <Input
+            placeholder={`Add new ${label.toLowerCase()}`}
+            value={newVal}
+            onChange={(e) => setNewVal(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                const name = newVal.trim();
+                if (!name) return;
+                list.add(name);
+                form.setValue(fieldName, name);
+                setNewVal('');
+              }
+            }}
+          />
+          <Button type="button" variant="outline" onClick={() => {
+            const name = newVal.trim();
+            if (!name) return;
+            list.add(name);
+            form.setValue(fieldName, name);
+            setNewVal('');
+          }}>
+            <Plus className="h-4 w-4" />
+            Add
+          </Button>
+        </div>
+        <FormMessage />
+      </FormItem>
+    )} />
+  );
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -165,13 +233,7 @@ export const CaseForm = ({ open, onClose, onSubmit, initialData, mode, defaultNe
                 </FormItem>
               )} />
 
-              <FormField control={form.control} name="garnishee" render={({ field }) => (
-                <FormItem className="sm:col-span-2">
-                  <FormLabel>Garnishee</FormLabel>
-                  <FormControl><Input placeholder="Represented garnishee" {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
+              {renderManagedSelect('garnishee', 'Garnishee', 'Select garnishee', garnisheesList, newGarnishee, setNewGarnishee, true)}
 
               <FormField control={form.control} name="status" render={({ field }) => (
                 <FormItem>
@@ -205,21 +267,8 @@ export const CaseForm = ({ open, onClose, onSubmit, initialData, mode, defaultNe
                 </FormItem>
               )} />
 
-              <FormField control={form.control} name="court" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Court</FormLabel>
-                  <FormControl><Input placeholder="Court name" {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
-
-              <FormField control={form.control} name="judge" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Judge</FormLabel>
-                  <FormControl><Input placeholder="Judge name" {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
+              {renderManagedSelect('court', 'Court', 'Select court', courtsList, newCourt, setNewCourt)}
+              {renderManagedSelect('judge', 'Judge', 'Select judge', judgesList, newJudge, setNewJudge)}
 
               <FormField control={form.control} name="filingDate" render={({ field }) => (
                 <FormItem>
@@ -232,14 +281,6 @@ export const CaseForm = ({ open, onClose, onSubmit, initialData, mode, defaultNe
               <FormField control={form.control} name="nextHearing" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Next Hearing</FormLabel>
-                  <FormControl><Input type="date" {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
-
-              <FormField control={form.control} name="garnisheeDeadline" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Garnishee Deadline</FormLabel>
                   <FormControl><Input type="date" {...field} /></FormControl>
                   <FormMessage />
                 </FormItem>
