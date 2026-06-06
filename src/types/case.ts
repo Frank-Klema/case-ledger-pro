@@ -11,7 +11,10 @@ export interface CaseLog {
   id: string;
   /** Date the event occurred (ISO yyyy-mm-dd) */
   date: string;
+  /** Legacy single type — kept for back-compat. */
   type: CaseLogType;
+  /** Multi-select types (adjournment + indorsement can co-exist). */
+  types?: CaseLogType[];
   /** Counsel who handled this date */
   counsel: string;
   /** Free-form note: indorsement text, etc. */
