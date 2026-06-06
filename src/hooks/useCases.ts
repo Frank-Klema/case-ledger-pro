@@ -203,9 +203,9 @@ export const useCases = () => {
           createdAt: new Date().toISOString(),
         };
         const newLastCounsel = entry.counsel || c.lastCounsel;
-        const newNextHearing = entry.type === 'adjournment' && entry.adjournedTo
-          ? entry.adjournedTo
-          : c.nextHearing;
+        // Any log with an Adjourned Date updates the case's Next Hearing,
+        // so it instantly reflects on the calendar / dashboard / lists.
+        const newNextHearing = entry.adjournedTo ? entry.adjournedTo : c.nextHearing;
         return {
           ...c,
           logs: [log, ...(c.logs ?? [])],
