@@ -3,7 +3,7 @@
  */
 
 import { useState } from 'react';
-import { Settings, Moon, Sun, Monitor, Type, LayoutGrid, List, UserCheck, Plus, X, Waves, Trees, Sunset, Flower2, Sparkles, Gavel, Building, Scale } from 'lucide-react';
+import { Settings, Moon, Sun, Monitor, Type, LayoutGrid, List, UserCheck, Plus, X, Waves, Trees, Sunset, Flower2, Sparkles, Gavel, Building, Scale, BookOpen, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -55,6 +55,7 @@ export const SettingsDialog = () => {
   const [newGarnishee, setNewGarnishee] = useState('');
   const [newCourt, setNewCourt] = useState('');
   const [newJudge, setNewJudge] = useState('');
+  const [showTutorial, setShowTutorial] = useState(false);
 
   return (
     <Dialog>
@@ -199,6 +200,67 @@ export const SettingsDialog = () => {
           >
             Reset to Defaults
           </Button>
+
+          {/* Quick Tutorial — collapsible, written for first-time users */}
+          <div className="space-y-2 pt-2 border-t border-border">
+            <button
+              type="button"
+              onClick={() => setShowTutorial(v => !v)}
+              className="w-full flex items-center justify-between rounded-lg border border-border p-3 hover:bg-muted/50 transition-colors"
+            >
+              <span className="flex items-center gap-2 text-sm font-medium">
+                <BookOpen className="h-4 w-4 text-muted-foreground" />
+                Quick Tutorial
+              </span>
+              <ChevronDown className={cn('h-4 w-4 transition-transform', showTutorial && 'rotate-180')} />
+            </button>
+            {showTutorial && (
+              <div className="rounded-lg border border-border bg-muted/30 p-4 text-sm space-y-3 leading-relaxed">
+                <p className="font-medium text-foreground">Welcome! Here's the 60-second tour:</p>
+                <ol className="list-decimal pl-5 space-y-2 text-muted-foreground">
+                  <li>
+                    <span className="text-foreground font-medium">Add a case</span> — click
+                    <em> New Case</em> in the top-right. Fill in the case number, parties
+                    (Order Creditor, Order Debtor, Garnishee), court, judge and the next
+                    hearing date. Garnishee, Court, Judge and Counsel all remember past
+                    entries so you can pick them next time.
+                  </li>
+                  <li>
+                    <span className="text-foreground font-medium">Dashboard</span> shows
+                    totals, urgent cases and a status bar chart. Click any stat card to
+                    jump into the matching list.
+                  </li>
+                  <li>
+                    <span className="text-foreground font-medium">Calendar</span> shows
+                    every next hearing. Click a date to see what's on; click an empty
+                    date to add a case scheduled for it.
+                  </li>
+                  <li>
+                    <span className="text-foreground font-medium">Case Log</span> — open
+                    a case and click <em>Add Entry</em> to record an adjournment or
+                    indorsement. Setting an <em>Adjourned Date</em> instantly becomes the
+                    case's new Next Hearing everywhere.
+                  </li>
+                  <li>
+                    <span className="text-foreground font-medium">Import / Export</span>
+                    — use the buttons in the header to move cases to and from Excel
+                    (.xlsx). Download the template from the import dialog for the right
+                    column layout.
+                  </li>
+                  <li>
+                    <span className="text-foreground font-medium">Archive vs Bin</span>
+                    — Archive keeps a finished case out of the way but searchable. Bin
+                    is a soft-delete; restore or empty it any time.
+                  </li>
+                  <li>
+                    <span className="text-foreground font-medium">Themes & sizing</span>
+                    — pick a theme above, set text size and toggle Compact Mode for a
+                    denser layout.
+                  </li>
+                </ol>
+              </div>
+            )}
+          </div>
 
           {/* Counsels manager */}
           <div className="space-y-3 pt-2 border-t border-border">
