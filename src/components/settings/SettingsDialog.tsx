@@ -18,18 +18,23 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useSettings, Theme, FontSize, CasesPerPage } from '@/hooks/useSettings';
 import { useCounsels } from '@/hooks/useCounsels';
-import { useGarnishees, useCourts, useJudges } from '@/hooks/useLists';
+import { useGarnishees, useCourts } from '@/hooks/useLists';
+import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
 
-const themes: { value: Theme; label: string; icon: typeof Sun }[] = [
-  { value: 'light', label: 'Light', icon: Sun },
-  { value: 'dark', label: 'Dark', icon: Moon },
-  { value: 'system', label: 'System', icon: Monitor },
-  { value: 'ocean', label: 'Ocean', icon: Waves },
-  { value: 'forest', label: 'Forest', icon: Trees },
-  { value: 'midnight', label: 'Midnight', icon: Sparkles },
-  { value: 'sunset', label: 'Sunset', icon: Sunset },
-  { value: 'rose', label: 'Rose', icon: Flower2 },
+const themes: { value: Theme; label: string; icon: typeof Sun; swatch: string }[] = [
+  { value: 'light', label: 'Light', icon: Sun, swatch: 'hsl(0 0% 96%)' },
+  { value: 'dark', label: 'Dark', icon: Moon, swatch: 'hsl(0 0% 9%)' },
+  { value: 'system', label: 'System', icon: Monitor, swatch: 'linear-gradient(135deg, hsl(0 0% 96%) 50%, hsl(0 0% 9%) 50%)' },
+  { value: 'ocean', label: 'Ocean', icon: Waves, swatch: 'hsl(195 85% 55%)' },
+  { value: 'forest', label: 'Forest', icon: Trees, swatch: 'hsl(142 65% 50%)' },
+  { value: 'midnight', label: 'Midnight', icon: Sparkles, swatch: 'hsl(270 90% 70%)' },
+  { value: 'sunset', label: 'Sunset', icon: Sunset, swatch: 'hsl(18 85% 55%)' },
+  { value: 'rose', label: 'Rose', icon: Flower2, swatch: 'hsl(340 80% 55%)' },
+  { value: 'lavender', label: 'Lavender', icon: Flower2, swatch: 'hsl(265 65% 65%)' },
+  { value: 'mint', label: 'Mint', icon: Trees, swatch: 'hsl(165 70% 50%)' },
+  { value: 'slate', label: 'Slate', icon: Building, swatch: 'hsl(215 30% 45%)' },
+  { value: 'sand', label: 'Sand', icon: Sunset, swatch: 'hsl(35 60% 75%)' },
 ];
 
 const fontSizes: { value: FontSize; label: string; sample: string }[] = [
@@ -47,15 +52,21 @@ const casesPerPageOptions: { value: CasesPerPage; label: string }[] = [
 
 export const SettingsDialog = () => {
   const { settings, updateSettings, resetSettings } = useSettings();
+  const { user, updateProfile, signOut } = useAuth();
   const { counsels, addCounsel, removeCounsel } = useCounsels();
   const garnishees = useGarnishees();
   const courts = useCourts();
-  const judges = useJudges();
   const [newCounsel, setNewCounsel] = useState('');
   const [newGarnishee, setNewGarnishee] = useState('');
   const [newCourt, setNewCourt] = useState('');
-  const [newJudge, setNewJudge] = useState('');
   const [showTutorial, setShowTutorial] = useState(false);
+  const [displayName, setDisplayName] = useState(user?.displayName || '');
+
+  const handleAvatarUpload = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = () => updateProfile({ avatar: String(reader.result) });
+    reader.readAsDataURL(file);
+  };
 
   return (
     <Dialog>
@@ -84,7 +95,7 @@ export const SettingsDialog = () => {
               <Label className="text-sm font-medium">Theme</Label>
             </div>
             <div className="grid grid-cols-3 gap-2">
-              {themes.map(({ value, label, icon: Icon }) => (
+              {themes.map(({ value, label, icon: Icon, swatch }) => (
                 <button
                   key={value}
                   onClick={() => updateSettings({ theme: value })}
@@ -95,10 +106,10 @@ export const SettingsDialog = () => {
                       : "border-border hover:border-muted-foreground/50"
                   )}
                 >
-                  <Icon className={cn(
-                    "h-5 w-5",
-                    settings.theme === value ? "text-primary" : "text-muted-foreground"
-                  )} />
+                  <span
+                    className="h-6 w-6 rounded-full border border-border shadow-inner"
+                    style={{ background: swatch }}
+                  />
                   <span className={cn(
                     "text-xs font-medium",
                     settings.theme === value ? "text-primary" : "text-muted-foreground"
@@ -314,11 +325,44 @@ export const SettingsDialog = () => {
             )}
           </div>
 
-          {/* Garnishees / Courts / Judges managers */}
+          {/* Profile manager */}
+          {user && (
+            <div className="space-y-3 pt-2 border-t border-border">
+              <Label className="text-sm font-medium">Your profile</Label>
+              <div className="flex items-center gap-4">
+                <div className="h-16 w-16 rounded-full overflow-hidden bg-muted flex items-center justify-center border border-border">
+                  {user.avatar ? (
+                    <img src={user.avatar} alt="Avatar" className="h-full w-full object-cover" />
+                  ) : (
+                    <span className="text-lg font-semibold">{(user.displayName || user.email)[0]?.toUpperCase()}</span>
+                  )}
+                </div>
+                <div className="flex-1 space-y-2">
+                  <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Display name" />
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="outline" onClick={() => updateProfile({ displayName })}>
+                      Save name
+                    </Button>
+                    <label className="cursor-pointer">
+                      <input
+                        type="file" accept="image/*" className="hidden"
+                        onChange={(e) => { const f = e.target.files?.[0]; if (f) handleAvatarUpload(f); }}
+                      />
+                      <span className="inline-flex items-center text-sm px-3 py-1.5 rounded-md border border-border hover:bg-muted">
+                        Upload icon
+                      </span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+              <Button variant="outline" className="w-full" onClick={signOut}>Sign out</Button>
+            </div>
+          )}
+
+          {/* Garnishees / Courts managers */}
           {([
             { label: 'Garnishees', icon: Gavel, list: garnishees, value: newGarnishee, set: setNewGarnishee },
             { label: 'Courts', icon: Building, list: courts, value: newCourt, set: setNewCourt },
-            { label: 'Judges', icon: Scale, list: judges, value: newJudge, set: setNewJudge },
           ] as const).map(({ label, icon: Icon, list, value, set }) => (
             <div key={label} className="space-y-3 pt-2 border-t border-border">
               <div className="flex items-center gap-2">

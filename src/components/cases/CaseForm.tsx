@@ -18,7 +18,7 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { Plus } from 'lucide-react';
 import { useCounsels } from '@/hooks/useCounsels';
-import { useGarnishees, useCourts, useJudges } from '@/hooks/useLists';
+import { useGarnishees, useCourts } from '@/hooks/useLists';
 
 const caseSchema = z.object({
   caseNumber: z.string().min(1, 'Case number is required'),
@@ -26,13 +26,11 @@ const caseSchema = z.object({
   judgmentCreditor: z.string().min(1, 'Judgment creditor is required'),
   judgmentDebtor: z.string(),
   garnishee: z.string(),
-  status: z.enum(['open', 'pending', 'closed', 'archived']),
-  priority: z.enum(['low', 'medium', 'high', 'urgent']),
+  status: z.enum(['open', 'closed', 'archived']),
+  priority: z.enum(['normal', 'urgent']),
   court: z.string(),
-  judge: z.string(),
   filingDate: z.string(),
   nextHearing: z.string(),
-  garnisheeDeadline: z.string(),
   description: z.string(),
   notes: z.string(),
   judgmentCollected: z.boolean(),
@@ -47,12 +45,10 @@ const EMPTY: CaseFormData = {
   judgmentDebtor: '',
   garnishee: '',
   status: 'open',
-  priority: 'medium',
+  priority: 'normal',
   court: '',
-  judge: '',
   filingDate: '',
   nextHearing: '',
-  garnisheeDeadline: '',
   description: '',
   notes: '',
   judgmentCollected: false,
@@ -73,11 +69,9 @@ export const CaseForm = ({ open, onClose, onSubmit, initialData, mode, defaultNe
   const { counsels, addCounsel } = useCounsels();
   const garnisheesList = useGarnishees();
   const courtsList = useCourts();
-  const judgesList = useJudges();
   const [newCounsel, setNewCounsel] = useState('');
   const [newGarnishee, setNewGarnishee] = useState('');
   const [newCourt, setNewCourt] = useState('');
-  const [newJudge, setNewJudge] = useState('');
 
   const form = useForm<CaseFormData>({
     resolver: zodResolver(caseSchema),
@@ -88,19 +82,22 @@ export const CaseForm = ({ open, onClose, onSubmit, initialData, mode, defaultNe
   useEffect(() => {
     if (!open) return;
     if (mode === 'edit' && initialData) {
+      const p: 'normal' | 'urgent' = initialData.priority === 'urgent' ? 'urgent' : 'normal';
+      const s: 'open' | 'closed' | 'archived' =
+        initialData.status === 'closed' ? 'closed'
+        : initialData.status === 'archived' ? 'archived'
+        : 'open';
       form.reset({
         caseNumber: initialData.caseNumber,
         title: initialData.title,
         judgmentCreditor: initialData.judgmentCreditor ?? '',
         judgmentDebtor: initialData.judgmentDebtor ?? '',
         garnishee: initialData.garnishee ?? '',
-        status: initialData.status,
-        priority: initialData.priority,
+        status: s,
+        priority: p,
         court: initialData.court ?? '',
-        judge: initialData.judge ?? '',
         filingDate: initialData.filingDate ?? '',
         nextHearing: initialData.nextHearing ?? '',
-        garnisheeDeadline: initialData.garnisheeDeadline ?? '',
         description: initialData.description ?? '',
         notes: initialData.notes ?? '',
         judgmentCollected: initialData.judgmentCollected ?? false,
@@ -113,14 +110,12 @@ export const CaseForm = ({ open, onClose, onSubmit, initialData, mode, defaultNe
     setNewCounsel('');
     setNewGarnishee('');
     setNewCourt('');
-    setNewJudge('');
   }, [open, mode, initialData, defaultNextHearing, form]);
 
   const handleSubmit = (data: CaseFormData) => {
     if (data.lastCounsel) addCounsel(data.lastCounsel);
     if (data.garnishee) garnisheesList.add(data.garnishee);
     if (data.court) courtsList.add(data.court);
-    if (data.judge) judgesList.add(data.judge);
     onSubmit(data);
     form.reset(EMPTY);
     onClose();
@@ -135,7 +130,7 @@ export const CaseForm = ({ open, onClose, onSubmit, initialData, mode, defaultNe
   };
 
   const renderManagedSelect = (
-    fieldName: 'garnishee' | 'court' | 'judge',
+    fieldName: 'garnishee' | 'court',
     label: string,
     placeholder: string,
     list: { items: string[]; add: (n: string) => void },
@@ -219,16 +214,16 @@ export const CaseForm = ({ open, onClose, onSubmit, initialData, mode, defaultNe
 
               <FormField control={form.control} name="judgmentCreditor" render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Order Creditor</FormLabel>
-                  <FormControl><Input placeholder="Order creditor" {...field} /></FormControl>
+                  <FormLabel>Judgment Creditor</FormLabel>
+                  <FormControl><Input placeholder="Judgment creditor" {...field} /></FormControl>
                   <FormMessage />
                 </FormItem>
               )} />
 
               <FormField control={form.control} name="judgmentDebtor" render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Order Debtor</FormLabel>
-                  <FormControl><Input placeholder="Order debtor" {...field} /></FormControl>
+                  <FormLabel>Judgment Debtor</FormLabel>
+                  <FormControl><Input placeholder="Judgment debtor" {...field} /></FormControl>
                   <FormMessage />
                 </FormItem>
               )} />
@@ -242,7 +237,6 @@ export const CaseForm = ({ open, onClose, onSubmit, initialData, mode, defaultNe
                     <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                     <SelectContent>
                       <SelectItem value="open">Open</SelectItem>
-                      <SelectItem value="pending">Pending</SelectItem>
                       <SelectItem value="closed">Closed</SelectItem>
                       <SelectItem value="archived">Archived</SelectItem>
                     </SelectContent>
@@ -257,9 +251,7 @@ export const CaseForm = ({ open, onClose, onSubmit, initialData, mode, defaultNe
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                     <SelectContent>
-                      <SelectItem value="low">Low</SelectItem>
-                      <SelectItem value="medium">Medium</SelectItem>
-                      <SelectItem value="high">High</SelectItem>
+                      <SelectItem value="normal">Normal</SelectItem>
                       <SelectItem value="urgent">Urgent</SelectItem>
                     </SelectContent>
                   </Select>
@@ -267,8 +259,7 @@ export const CaseForm = ({ open, onClose, onSubmit, initialData, mode, defaultNe
                 </FormItem>
               )} />
 
-              {renderManagedSelect('court', 'Court', 'Select court', courtsList, newCourt, setNewCourt)}
-              {renderManagedSelect('judge', 'Judge', 'Select judge', judgesList, newJudge, setNewJudge)}
+              {renderManagedSelect('court', 'Court (include judge if relevant)', 'Select court', courtsList, newCourt, setNewCourt, true)}
 
               <FormField control={form.control} name="filingDate" render={({ field }) => (
                 <FormItem>
