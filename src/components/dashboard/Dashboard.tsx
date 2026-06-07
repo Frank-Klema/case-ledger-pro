@@ -1,10 +1,10 @@
-import { Briefcase, Clock, AlertTriangle, Hourglass } from 'lucide-react';
+import { Briefcase, Clock, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { StatsCard } from './StatsCard';
 import { CaseStatusChart } from './CaseStatusChart';
 import { LegalCase } from '@/types/case';
 import { formatDate } from '@/lib/date';
 
-export type DashboardFilter = 'all' | 'open' | 'pending' | 'closed' | 'urgent' | 'archived' | 'pendingJudgment';
+export type DashboardFilter = 'all' | 'open' | 'closed' | 'urgent' | 'archived' | 'pendingJudgment';
 
 interface DashboardProps {
   cases: LegalCase[];
@@ -22,7 +22,6 @@ export const Dashboard = ({
   const stats = {
     total: activeCases.length,
     open: activeCases.filter(c => c.status === 'open').length,
-    pending: activeCases.filter(c => c.status === 'pending').length,
     closed: activeCases.filter(c => c.status === 'closed').length,
     urgent: activeCases.filter(c => c.priority === 'urgent').length,
     archived: archivedCases.length,
@@ -39,7 +38,7 @@ export const Dashboard = ({
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatsCard title="Total Cases" value={stats.total} icon={Briefcase} variant="primary" onClick={() => onFilterSelect?.('all')} />
         <StatsCard title="Open Cases" value={stats.open} icon={Clock} variant="warning" onClick={() => onFilterSelect?.('open')} />
-        <StatsCard title="Pending Cases" value={stats.pending} icon={Hourglass} variant="default" onClick={() => onFilterSelect?.('pending')} />
+        <StatsCard title="Closed Cases" value={stats.closed} icon={CheckCircle2} variant="success" onClick={() => onFilterSelect?.('closed')} />
         <StatsCard title="Urgent Cases" value={stats.urgent} icon={AlertTriangle} variant="destructive" onClick={() => onFilterSelect?.('urgent')} />
       </div>
 

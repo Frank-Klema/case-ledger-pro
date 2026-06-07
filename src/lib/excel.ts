@@ -6,15 +6,15 @@ import * as XLSX from 'xlsx';
 import { LegalCase, CaseFormData, CaseStatus, CasePriority } from '@/types/case';
 
 const validateStatus = (value: string): CaseStatus => {
-  const statuses: CaseStatus[] = ['open', 'pending', 'closed', 'archived'];
   const n = String(value || '').toLowerCase().trim();
-  return (statuses as string[]).includes(n) ? (n as CaseStatus) : 'open';
+  if (n === 'closed') return 'closed';
+  if (n === 'archived') return 'archived';
+  return 'open'; // 'pending' or anything else folds to open
 };
 
 const validatePriority = (value: string): CasePriority => {
-  const priorities: CasePriority[] = ['low', 'medium', 'high', 'urgent'];
   const n = String(value || '').toLowerCase().trim();
-  return (priorities as string[]).includes(n) ? (n as CasePriority) : 'medium';
+  return n === 'urgent' ? 'urgent' : 'normal';
 };
 
 const validateBoolean = (value: string): boolean => {
@@ -63,16 +63,14 @@ export const exportToExcel = (cases: LegalCase[], filename = 'garnishee_cases') 
   const exportData = cases.map(c => ({
     'Case Number': c.caseNumber,
     'Title': c.title,
-    'Order Creditor': c.judgmentCreditor,
-    'Order Debtor': c.judgmentDebtor,
+    'Judgment Creditor': c.judgmentCreditor,
+    'Judgment Debtor': c.judgmentDebtor,
     'Garnishee': c.garnishee,
     'Status': c.status,
     'Priority': c.priority,
     'Court': c.court,
-    'Judge': c.judge,
     'Date Filed': formatIsoForExcel(c.filingDate),
     'Next Hearing': formatIsoForExcel(c.nextHearing),
-    'Garnishee Deadline': formatIsoForExcel(c.garnisheeDeadline),
     'Description': c.description,
     'Notes': c.notes,
     'Order Collected': c.judgmentCollected ? 'Yes' : 'No',
@@ -120,16 +118,14 @@ export const importFromExcel = (file: File): Promise<CaseFormData[]> => {
           .map(row => ({
             caseNumber: String(pick(row, 'Case Number', 'caseNumber') || ''),
             title: String(pick(row, 'Title', 'title') || ''),
-            judgmentCreditor: String(pick(row, 'Order Creditor', 'Judgment Creditor', 'judgmentCreditor', 'Client', 'client') || ''),
-            judgmentDebtor: String(pick(row, 'Order Debtor', 'Judgment Debtor', 'judgmentDebtor', 'Opposing Party', 'opposingParty') || ''),
+            judgmentCreditor: String(pick(row, 'Judgment Creditor', 'Order Creditor', 'judgmentCreditor', 'Client', 'client') || ''),
+            judgmentDebtor: String(pick(row, 'Judgment Debtor', 'Order Debtor', 'judgmentDebtor', 'Opposing Party', 'opposingParty') || ''),
             garnishee: String(pick(row, 'Garnishee', 'garnishee', 'Represented Garnishee', 'representedGarnishee') || ''),
             status: validateStatus(String(pick(row, 'Status', 'status'))),
             priority: validatePriority(String(pick(row, 'Priority', 'priority'))),
             court: String(pick(row, 'Court', 'court', 'Garnishee Court', 'garnisheeCourt') || ''),
-            judge: String(pick(row, 'Judge', 'judge') || ''),
             filingDate: toIsoDate(pick(row, 'Date Filed', 'Filing Date', 'filingDate')),
             nextHearing: toIsoDate(pick(row, 'Next Hearing', 'nextHearing')),
-            garnisheeDeadline: toIsoDate(pick(row, 'Garnishee Deadline', 'garnisheeDeadline')),
             description: String(pick(row, 'Description', 'description') || ''),
             notes: String(pick(row, 'Notes', 'notes', 'Garnishee Comment', 'garnisheeComment') || ''),
             judgmentCollected: validateBoolean(String(pick(row, 'Order Collected', 'Judgment Collected', 'judgmentCollected'))),
@@ -153,16 +149,14 @@ export const downloadTemplate = () => {
     {
       'Case Number': 'GARN-2026-001',
       'Title': 'Sample Garnishee Proceeding',
-      'Order Creditor': 'ABC Holdings Ltd',
-      'Order Debtor': 'XYZ Trading Ltd',
+      'Judgment Creditor': 'ABC Holdings Ltd',
+      'Judgment Debtor': 'XYZ Trading Ltd',
       'Garnishee': 'First Bank Plc',
       'Status': 'open',
-      'Priority': 'high',
-      'Court': 'High Court of Lagos State',
-      'Judge': 'Hon. Justice Adekunle',
+      'Priority': 'urgent',
+      'Court': 'High Court of Lagos State — Hon. Justice Adekunle',
       'Date Filed': '15/01/2026',
       'Next Hearing': '20/02/2026',
-      'Garnishee Deadline': '10/02/2026',
       'Description': 'Garnishee proceeding to attach judgment debtor funds',
       'Notes': 'Awaiting bank response on funds held',
       'Order Collected': 'No',

@@ -2,25 +2,26 @@
  * @fileoverview Type definitions for the garnishee case management system.
  */
 
-export type CaseStatus = 'open' | 'pending' | 'closed' | 'archived';
-export type CasePriority = 'low' | 'medium' | 'high' | 'urgent';
+export type CaseStatus = 'open' | 'closed' | 'archived';
+export type CasePriority = 'normal' | 'urgent';
 
-export type CaseLogType = 'adjournment' | 'indorsement' | 'note';
+export type CaseLogType = 'note';
 
 export interface CaseLog {
   id: string;
-  /** Date the event occurred (ISO yyyy-mm-dd) */
+  /** Date of this log entry / the case date. */
   date: string;
-  /** Legacy single type — kept for back-compat. */
+  /** Always 'note' in the new model (indorsement / note). */
   type: CaseLogType;
-  /** Multi-select types (adjournment + indorsement can co-exist). */
-  types?: CaseLogType[];
   /** Counsel who handled this date */
   counsel: string;
-  /** Free-form note: indorsement text, etc. */
+  /** Indorsement / free-form note text */
   note: string;
-  /** If adjourned: the date adjourned to (ISO yyyy-mm-dd) */
+  /** If adjourned: the date adjourned to (ISO yyyy-mm-dd). When set this also
+   *  becomes the case's new Next Hearing. */
   adjournedTo?: string;
+  /** Whether an update on this entry should be communicated to the represented garnishee. */
+  updateToGarnishee?: boolean;
   createdAt: string;
 }
 
@@ -36,11 +37,10 @@ export interface LegalCase {
   garnishee: string;
   status: CaseStatus;
   priority: CasePriority;
+  /** Court — may include judge details as a sub-line. */
   court: string;
-  judge: string;
   filingDate: string;
   nextHearing: string;
-  garnisheeDeadline: string;
   description: string;
   notes: string;
   judgmentCollected: boolean;
@@ -50,6 +50,9 @@ export interface LegalCase {
   createdAt: string;
   updatedAt: string;
   deletedAt?: string | null;
+  /** Legacy fields — kept optional for migration. */
+  judge?: string;
+  garnisheeDeadline?: string;
 }
 
 export type CaseFormData = Omit<LegalCase, 'id' | 'createdAt' | 'updatedAt' | 'deletedAt' | 'logs'> & {

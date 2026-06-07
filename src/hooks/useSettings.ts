@@ -1,9 +1,16 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { userKey } from '@/lib/auth';
 
 export type FontSize = 'small' | 'medium' | 'large';
-export type Theme = 'light' | 'dark' | 'system' | 'ocean' | 'forest' | 'sunset' | 'rose' | 'midnight';
+export type Theme =
+  | 'light' | 'dark' | 'system'
+  | 'ocean' | 'forest' | 'sunset' | 'rose' | 'midnight'
+  | 'lavender' | 'mint' | 'slate' | 'sand';
 
-const PRESET_THEMES: Theme[] = ['ocean', 'forest', 'sunset', 'rose', 'midnight'];
+const PRESET_THEMES: Theme[] = [
+  'ocean', 'forest', 'sunset', 'rose', 'midnight',
+  'lavender', 'mint', 'slate', 'sand',
+];
 const ALL_PRESET_CLASSES = PRESET_THEMES.map(t => `theme-${t}`);
 
 export type CasesPerPage = 10 | 15 | 25 | 50;
@@ -22,7 +29,7 @@ const defaultSettings: Settings = {
   casesPerPage: 15,
 };
 
-const SETTINGS_KEY = 'legalcase-settings';
+const SETTINGS_BASE = 'legalcase-settings';
 
 const fontSizeMap: Record<FontSize, string> = {
   small: '14px',
@@ -31,8 +38,9 @@ const fontSizeMap: Record<FontSize, string> = {
 };
 
 export const useSettings = () => {
+  const key = useMemo(() => userKey(SETTINGS_BASE), []);
   const [settings, setSettings] = useState<Settings>(() => {
-    const stored = localStorage.getItem(SETTINGS_KEY);
+    const stored = localStorage.getItem(key);
     return stored ? { ...defaultSettings, ...JSON.parse(stored) } : defaultSettings;
   });
 
@@ -79,8 +87,8 @@ export const useSettings = () => {
 
   // Persist settings
   useEffect(() => {
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
-  }, [settings]);
+    localStorage.setItem(key, JSON.stringify(settings));
+  }, [settings, key]);
 
   const updateSettings = useCallback((updates: Partial<Settings>) => {
     setSettings(prev => ({ ...prev, ...updates }));

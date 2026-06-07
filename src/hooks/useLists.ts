@@ -1,7 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { userKey } from '@/lib/auth';
 
-/** Generic editable string-list hook backed by localStorage. */
-const makeListHook = (key: string) => () => {
+/** Generic editable, per-user string-list hook backed by localStorage. */
+const makeListHook = (base: string) => () => {
+  const key = useMemo(() => userKey(base), []);
+
   const read = (): string[] => {
     try {
       const raw = localStorage.getItem(key);
@@ -15,7 +18,7 @@ const makeListHook = (key: string) => () => {
 
   useEffect(() => {
     localStorage.setItem(key, JSON.stringify(items));
-  }, [items]);
+  }, [items, key]);
 
   const add = useCallback((name: string) => {
     const trimmed = name.trim();
@@ -36,4 +39,3 @@ const makeListHook = (key: string) => () => {
 
 export const useGarnishees = makeListHook('legalcase-garnishees');
 export const useCourts = makeListHook('legalcase-courts');
-export const useJudges = makeListHook('legalcase-judges');

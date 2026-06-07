@@ -1,23 +1,21 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { userKey } from '@/lib/auth';
 
-const KEY = 'legalcase-counsels';
-
-const read = (): string[] => {
+const read = (key: string): string[] => {
   try {
-    const raw = localStorage.getItem(KEY);
+    const raw = localStorage.getItem(key);
     return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
+  } catch { return []; }
 };
 
-/** Editable list of counsels used in the Last Counsel selector. */
+/** Editable, per-user list of counsels used in the Last Counsel selector. */
 export const useCounsels = () => {
-  const [counsels, setCounsels] = useState<string[]>(read);
+  const key = useMemo(() => userKey('legalcase-counsels'), []);
+  const [counsels, setCounsels] = useState<string[]>(() => read(key));
 
   useEffect(() => {
-    localStorage.setItem(KEY, JSON.stringify(counsels));
-  }, [counsels]);
+    localStorage.setItem(key, JSON.stringify(counsels));
+  }, [counsels, key]);
 
   const addCounsel = useCallback((name: string) => {
     const trimmed = name.trim();

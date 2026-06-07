@@ -267,7 +267,7 @@ export const useCases = () => {
 
   /** Cases with judgment/order not yet collected */
   const pendingJudgmentCases = useMemo(() => 
-    cases.filter(c => !c.judgmentCollected && (c.status === 'closed' || c.status === 'pending')), 
+    cases.filter(c => !c.judgmentCollected && c.status === 'closed'), 
     [cases]
   );
 
