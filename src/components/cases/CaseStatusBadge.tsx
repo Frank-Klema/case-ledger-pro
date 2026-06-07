@@ -7,7 +7,6 @@ interface StatusBadgeProps {
 
 const statusStyles: Record<CaseStatus, string> = {
   open: 'bg-warning/10 text-warning border-warning/20',
-  pending: 'bg-primary/10 text-primary border-primary/20',
   closed: 'bg-success/10 text-success border-success/20',
   archived: 'bg-muted text-muted-foreground border-border',
 };
@@ -28,9 +27,7 @@ interface PriorityBadgeProps {
 }
 
 const priorityStyles: Record<CasePriority, string> = {
-  low: 'bg-muted text-muted-foreground border-border',
-  medium: 'bg-primary/10 text-primary border-primary/20',
-  high: 'bg-warning/10 text-warning border-warning/20',
+  normal: 'bg-muted text-muted-foreground border-border',
   urgent: 'bg-destructive/10 text-destructive border-destructive/20',
 };
 

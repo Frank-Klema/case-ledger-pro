@@ -20,7 +20,6 @@ interface CaseStatusChartProps {
  */
 const STATUS_COLORS: Record<string, string> = {
   open: 'hsl(var(--warning))',
-  pending: 'hsl(var(--muted-foreground))',
   closed: 'hsl(180 60% 40%)', // Teal color
   archived: 'hsl(var(--accent))',
 };
@@ -30,7 +29,6 @@ const STATUS_COLORS: Record<string, string> = {
  */
 const STATUS_LABELS: Record<string, string> = {
   open: 'Open',
-  pending: 'Pending',
   closed: 'Closed',
   archived: 'Archived',
 };
@@ -50,7 +48,7 @@ export const CaseStatusChart = ({ cases }: CaseStatusChartProps) => {
   }, {} as Record<string, number>);
 
   // Always render all four statuses (zero counts included) so the axes stay stable.
-  const chartData = (['open', 'pending', 'closed', 'archived'] as const).map(status => ({
+  const chartData = (['open', 'closed', 'archived'] as const).map(status => ({
     name: STATUS_LABELS[status],
     value: statusCounts[status] || 0,
     status,
