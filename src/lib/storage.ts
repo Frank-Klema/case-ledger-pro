@@ -1,58 +1,57 @@
-import { LegalCase } from '@/types/case';
+import { LegalCase, CasePriority, CaseStatus } from '@/types/case';
+import { getCurrentUserId } from '@/lib/auth';
 
-const STORAGE_KEY = 'legal_cases';
+const STORAGE_BASE = 'legal_cases';
 const SCHEMA_KEY = 'legal_cases_schema_version';
 /** Bump when the LegalCase shape changes in an incompatible way. */
-const CURRENT_SCHEMA = 2;
+const CURRENT_SCHEMA = 3;
+
+const keyFor = (userId: string) => `${STORAGE_BASE}::${userId}`;
 
 const ensureSchema = () => {
   const v = localStorage.getItem(SCHEMA_KEY);
   if (v !== String(CURRENT_SCHEMA)) {
-    localStorage.removeItem(STORAGE_KEY);
+    // Schema bump — wipe legacy unscoped key and all per-user case stores.
+    localStorage.removeItem(STORAGE_BASE);
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith(STORAGE_BASE + '::')) localStorage.removeItem(k);
+    }
     localStorage.setItem(SCHEMA_KEY, String(CURRENT_SCHEMA));
   }
 };
 
-export const getCases = (): LegalCase[] => {
+/** Coerce legacy values to the current type (idempotent). */
+const normalize = (c: LegalCase): LegalCase => {
+  const status: CaseStatus = (['open', 'closed', 'archived'] as const).includes(c.status as any)
+    ? (c.status as CaseStatus)
+    : 'open';
+  const priority: CasePriority = c.priority === 'urgent' ? 'urgent' : 'normal';
+  return { ...c, status, priority };
+};
+
+const currentUser = (): string => getCurrentUserId() || '_guest';
+
+export const getCases = (): LegalCase[] => getCasesForUser(currentUser());
+export const saveCases = (cases: LegalCase[]): void => saveCasesForUser(currentUser(), cases);
+
+export const getCasesForUser = (userId: string): LegalCase[] => {
   try {
     ensureSchema();
-    const data = localStorage.getItem(STORAGE_KEY);
-    return data ? JSON.parse(data) : [];
+    const data = localStorage.getItem(keyFor(userId));
+    const parsed: LegalCase[] = data ? JSON.parse(data) : [];
+    return parsed.map(normalize);
   } catch (error) {
     console.error('Error reading cases from storage:', error);
     return [];
   }
 };
 
-export const saveCases = (cases: LegalCase[]): void => {
+export const saveCasesForUser = (userId: string, cases: LegalCase[]): void => {
   try {
     ensureSchema();
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(cases));
+    localStorage.setItem(keyFor(userId), JSON.stringify(cases));
   } catch (error) {
     console.error('Error saving cases to storage:', error);
   }
-};
-
-export const addCase = (caseData: LegalCase): void => {
-  const cases = getCases();
-  cases.push(caseData);
-  saveCases(cases);
-};
-
-export const updateCase = (id: string, updates: Partial<LegalCase>): void => {
-  const cases = getCases();
-  const index = cases.findIndex(c => c.id === id);
-  if (index !== -1) {
-    cases[index] = { ...cases[index], ...updates, updatedAt: new Date().toISOString() };
-    saveCases(cases);
-  }
-};
-
-export const deleteCase = (id: string): void => {
-  const cases = getCases().filter(c => c.id !== id);
-  saveCases(cases);
-};
-
-export const getCaseById = (id: string): LegalCase | undefined => {
-  return getCases().find(c => c.id === id);
 };
