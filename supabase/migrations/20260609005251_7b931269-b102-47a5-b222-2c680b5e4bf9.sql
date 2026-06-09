@@ -1,0 +1,1 @@
+CREATE TABLE public.smoke_test (id UUID PRIMARY KEY DEFAULT gen_random_uuid()); GRANT ALL ON public.smoke_test TO service_role;
