@@ -57,7 +57,7 @@ export const AdminPanel = () => {
   const totals = {
     users: users.length,
     cases: allCases.length,
-    open: allCases.filter(c => c.status === 'open' && !c.isArchived).length,
+    open: allCases.filter(c => c.status === 'open' && !c.is_archived).length,
     closed: allCases.filter(c => c.status === 'closed').length,
     urgent: allCases.filter(c => c.data?.priority === 'urgent').length,
     archived: allCases.filter(c => c.is_archived).length,
