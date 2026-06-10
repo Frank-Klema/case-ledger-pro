@@ -92,7 +92,7 @@ export const useAuth = () => {
 
   const updateProfile = useCallback(async (updates: { displayName?: string; avatar?: string }) => {
     if (!user) return;
-    const payload: Record<string, unknown> = {};
+    const payload: { display_name?: string; avatar_url?: string } = {};
     if (updates.displayName !== undefined) payload.display_name = updates.displayName;
     if (updates.avatar !== undefined) payload.avatar_url = updates.avatar;
     const { error } = await supabase.from('profiles').update(payload).eq('id', user.id);
