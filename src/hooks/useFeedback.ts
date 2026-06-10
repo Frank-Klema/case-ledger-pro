@@ -1,70 +1,42 @@
 import { useCallback, useEffect, useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface FeedbackItem {
   id: string;
-  userId: string;
-  userEmail: string;
-  userDisplayName: string;
+  userId: string | null;
   message: string;
-  rating?: number;
-  status: 'new' | 'acknowledged' | 'resolved';
+  category?: string | null;
   createdAt: string;
-  acknowledgedAt?: string;
 }
 
-const KEY = 'legalcase-feedback';
-
-const read = (): FeedbackItem[] => {
-  try {
-    const raw = localStorage.getItem(KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch { return []; }
-};
-const save = (items: FeedbackItem[]) => localStorage.setItem(KEY, JSON.stringify(items));
-
-/**
- * Shared feedback inbox stored in localStorage. Visible to admins through the
- * admin panel; submissions are simulated-acknowledged immediately.
- */
 export const useFeedback = () => {
-  const [items, setItems] = useState<FeedbackItem[]>(read);
+  const [items, setItems] = useState<FeedbackItem[]>([]);
 
-  useEffect(() => {
-    const refresh = () => setItems(read());
-    window.addEventListener('storage', refresh);
-    window.addEventListener('legalcase-feedback-changed', refresh);
-    return () => {
-      window.removeEventListener('storage', refresh);
-      window.removeEventListener('legalcase-feedback-changed', refresh);
-    };
+  const load = useCallback(async () => {
+    const { data } = await supabase
+      .from('feedback')
+      .select('id,user_id,message,category,created_at')
+      .order('created_at', { ascending: false });
+    setItems((data ?? []).map(r => ({
+      id: r.id, userId: r.user_id, message: r.message,
+      category: r.category, createdAt: r.created_at,
+    })));
   }, []);
 
-  const submit = useCallback((entry: Omit<FeedbackItem, 'id' | 'createdAt' | 'status' | 'acknowledgedAt'>) => {
-    const all = read();
-    const item: FeedbackItem = {
-      ...entry,
-      id: crypto.randomUUID(),
-      createdAt: new Date().toISOString(),
-      status: 'acknowledged',
-      acknowledgedAt: new Date().toISOString(),
-    };
-    const next = [item, ...all];
-    save(next); setItems(next);
-    window.dispatchEvent(new Event('legalcase-feedback-changed'));
-    return item;
-  }, []);
+  useEffect(() => { load(); }, [load]);
 
-  const setStatus = useCallback((id: string, status: FeedbackItem['status']) => {
-    const next = read().map(f => f.id === id ? { ...f, status } : f);
-    save(next); setItems(next);
-    window.dispatchEvent(new Event('legalcase-feedback-changed'));
-  }, []);
+  const submit = useCallback(async (entry: { userId: string | null; message: string; category?: string }) => {
+    const { error } = await supabase.from('feedback').insert({
+      user_id: entry.userId, message: entry.message, category: entry.category ?? null,
+    });
+    if (error) throw error;
+    await load();
+  }, [load]);
 
-  const remove = useCallback((id: string) => {
-    const next = read().filter(f => f.id !== id);
-    save(next); setItems(next);
-    window.dispatchEvent(new Event('legalcase-feedback-changed'));
-  }, []);
+  const remove = useCallback(async (id: string) => {
+    await supabase.from('feedback').delete().eq('id', id);
+    await load();
+  }, [load]);
 
-  return { items, submit, setStatus, remove };
+  return { items, submit, remove, reload: load };
 };

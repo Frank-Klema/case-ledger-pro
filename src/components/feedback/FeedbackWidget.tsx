@@ -21,18 +21,15 @@ export const FeedbackWidget = () => {
 
   if (!user) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!message.trim()) return;
-    submit({
-      userId: user.id,
-      userEmail: user.email,
-      userDisplayName: user.displayName,
-      message: message.trim(),
-    });
-    setSubmitted(true);
-    setMessage('');
-    setTimeout(() => { setSubmitted(false); setOpen(false); }, 2500);
+    try {
+      await submit({ userId: user.id, message: message.trim() });
+      setSubmitted(true);
+      setMessage('');
+      setTimeout(() => { setSubmitted(false); setOpen(false); }, 2500);
+    } catch { /* swallow — UI stays open */ }
   };
 
   return (
