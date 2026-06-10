@@ -20,6 +20,7 @@ import { useSettings, Theme, FontSize, CasesPerPage } from '@/hooks/useSettings'
 import { useCounsels } from '@/hooks/useCounsels';
 import { useGarnishees, useCourts } from '@/hooks/useLists';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 
 const themes: { value: Theme; label: string; icon: typeof Sun; swatch: string }[] = [
@@ -62,10 +63,18 @@ export const SettingsDialog = () => {
   const [showTutorial, setShowTutorial] = useState(false);
   const [displayName, setDisplayName] = useState(user?.displayName || '');
 
-  const handleAvatarUpload = (file: File) => {
-    const reader = new FileReader();
-    reader.onload = () => updateProfile({ avatar: String(reader.result) });
-    reader.readAsDataURL(file);
+  const handleAvatarUpload = async (file: File) => {
+    if (!user) return;
+    if (file.size > 2 * 1024 * 1024) {
+      alert('Avatar must be smaller than 2 MB.');
+      return;
+    }
+    const ext = file.name.split('.').pop()?.toLowerCase() || 'png';
+    const path = `${user.id}/avatar-${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from('avatars').upload(path, file, { upsert: true, contentType: file.type });
+    if (error) { alert('Upload failed: ' + error.message); return; }
+    const { data } = await supabase.storage.from('avatars').createSignedUrl(path, 60 * 60 * 24 * 365);
+    if (data?.signedUrl) await updateProfile({ avatar: data.signedUrl });
   };
 
   return (
