@@ -178,18 +178,6 @@ export type Database = {
         }
         Relationships: []
       }
-      smoke_test: {
-        Row: {
-          id: string
-        }
-        Insert: {
-          id?: string
-        }
-        Update: {
-          id?: string
-        }
-        Relationships: []
-      }
       user_lists: {
         Row: {
           id: string
