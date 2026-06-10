@@ -13,7 +13,7 @@ import { useToast } from '@/hooks/use-toast';
  * is automatically granted admin privileges.
  */
 export const Auth = () => {
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, signInWithGoogle } = useAuth();
   const { toast } = useToast();
   const [tab, setTab] = useState<'login' | 'signup'>('login');
 
@@ -41,16 +41,16 @@ export const Auth = () => {
     e.preventDefault();
     setSignupLoading(true);
     try {
-      const u = await signUp(signupEmail, signupPassword, signupName);
-      toast({
-        title: u.isAdmin ? 'Account created (Admin)' : 'Account created',
-        description: u.isAdmin
-          ? 'You are the first user — admin privileges granted.'
-          : 'Welcome to your case workspace.',
-      });
+      await signUp(signupEmail, signupPassword, signupName);
+      toast({ title: 'Account created', description: 'Welcome to your case workspace.' });
     } catch (err) {
       toast({ title: 'Sign up failed', description: (err as Error).message, variant: 'destructive' });
     } finally { setSignupLoading(false); }
+  };
+
+  const handleGoogle = async () => {
+    try { await signInWithGoogle(); }
+    catch (err) { toast({ title: 'Google sign-in failed', description: (err as Error).message, variant: 'destructive' }); }
   };
 
   return (
@@ -87,6 +87,15 @@ export const Auth = () => {
         </div>
 
         <div className="rounded-2xl border border-border bg-card p-6 shadow-lg animate-slide-up">
+          <Button type="button" variant="outline" className="w-full mb-4" onClick={handleGoogle}>
+            Continue with Google
+          </Button>
+          <div className="relative mb-4">
+            <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-border" /></div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-card px-2 text-muted-foreground">or</span>
+            </div>
+          </div>
           <Tabs value={tab} onValueChange={(v) => setTab(v as 'login' | 'signup')}>
             <TabsList className="grid grid-cols-2 w-full">
               <TabsTrigger value="login">Sign in</TabsTrigger>
