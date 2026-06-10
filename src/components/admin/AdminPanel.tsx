@@ -1,17 +1,15 @@
-import { useMemo } from 'react';
-import { Users, MessageSquare, Briefcase, Check, Trash2 } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Users, MessageSquare, Briefcase, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { StatsCard } from '@/components/dashboard/StatsCard';
-import { getAllUsers, toSafe } from '@/lib/auth';
-import { getCasesForUser } from '@/lib/storage';
 import { useFeedback } from '@/hooks/useFeedback';
 import { formatDate, formatDateTime } from '@/lib/date';
+import { supabase } from '@/integrations/supabase/client';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
   PieChart, Pie, Legend,
 } from 'recharts';
-import { LegalCase } from '@/types/case';
 
 const STATUS_COLORS: Record<string, string> = {
   open: 'hsl(var(--warning))',
@@ -19,30 +17,52 @@ const STATUS_COLORS: Record<string, string> = {
   archived: 'hsl(var(--muted-foreground))',
 };
 
-/**
- * Admin panel — visible only to users flagged `isAdmin`. Aggregates cases
- * across every locally-registered user and surfaces the feedback inbox.
- */
+interface AdminUser {
+  id: string; email: string | null; displayName: string;
+  createdAt: string; isAdmin: boolean;
+}
+interface AdminCase {
+  id: string; user_id: string; status: string | null;
+  is_archived: boolean; created_at: string; deleted_at: string | null;
+  data: { priority?: string } | null;
+}
+
 export const AdminPanel = () => {
-  const users = getAllUsers().map(toSafe);
-  const { items: feedback, setStatus, remove } = useFeedback();
+  const { items: feedback, remove } = useFeedback();
+  const [users, setUsers] = useState<AdminUser[]>([]);
+  const [cases, setCases] = useState<AdminCase[]>([]);
 
-  const perUserCases: { user: typeof users[number]; cases: LegalCase[] }[] = useMemo(
-    () => users.map(u => ({ user: u, cases: getCasesForUser(u.id) })),
-    [users],
-  );
+  useEffect(() => {
+    (async () => {
+      const [{ data: profiles }, { data: roles }, { data: caseRows }] = await Promise.all([
+        supabase.from('profiles').select('id,email,display_name,created_at'),
+        supabase.from('user_roles').select('user_id,role'),
+        supabase.from('cases').select('id,user_id,status,is_archived,created_at,deleted_at,data'),
+      ]);
+      const adminIds = new Set((roles ?? []).filter(r => r.role === 'admin').map(r => r.user_id));
+      setUsers((profiles ?? []).map(p => ({
+        id: p.id, email: p.email, displayName: p.display_name || (p.email ?? 'User'),
+        createdAt: p.created_at, isAdmin: adminIds.has(p.id),
+      })));
+      setCases((caseRows ?? []) as AdminCase[]);
+    })();
+  }, []);
 
-  const allCases = useMemo(() => perUserCases.flatMap(x => x.cases.filter(c => !c.deletedAt)), [perUserCases]);
+  const perUserCases = useMemo(() =>
+    users.map(u => ({ user: u, cases: cases.filter(c => c.user_id === u.id) })),
+    [users, cases]);
+
+  const allCases = useMemo(() => cases.filter(c => !c.deleted_at), [cases]);
 
   const totals = {
     users: users.length,
     cases: allCases.length,
     open: allCases.filter(c => c.status === 'open' && !c.isArchived).length,
     closed: allCases.filter(c => c.status === 'closed').length,
-    urgent: allCases.filter(c => c.priority === 'urgent').length,
-    archived: allCases.filter(c => c.isArchived).length,
+    urgent: allCases.filter(c => c.data?.priority === 'urgent').length,
+    archived: allCases.filter(c => c.is_archived).length,
     feedback: feedback.length,
-    newFeedback: feedback.filter(f => f.status !== 'resolved').length,
+    newFeedback: feedback.length,
   };
 
   const statusData = [
@@ -54,14 +74,14 @@ export const AdminPanel = () => {
   // Per-user chart
   const perUserData = perUserCases.map(({ user, cases }) => ({
     name: user.displayName,
-    cases: cases.filter(c => !c.deletedAt).length,
+    cases: cases.filter(c => !c.deleted_at).length,
   })).sort((a, b) => b.cases - a.cases).slice(0, 12);
 
   // Cases over time (by createdAt month)
   const byMonth = useMemo(() => {
     const m = new Map<string, number>();
     for (const c of allCases) {
-      const key = c.createdAt.slice(0, 7); // YYYY-MM
+      const key = c.created_at.slice(0, 7); // YYYY-MM
       m.set(key, (m.get(key) || 0) + 1);
     }
     return Array.from(m.entries()).sort(([a], [b]) => a.localeCompare(b))
@@ -149,7 +169,7 @@ export const AdminPanel = () => {
                   <td className="py-2 pr-3 font-medium">{user.displayName}</td>
                   <td className="py-2 pr-3 text-muted-foreground">{user.email}</td>
                   <td className="py-2 pr-3 text-muted-foreground">{formatDate(user.createdAt)}</td>
-                  <td className="py-2 pr-3">{cases.filter(c => !c.deletedAt).length}</td>
+                  <td className="py-2 pr-3">{cases.filter(c => !c.deleted_at).length}</td>
                   <td className="py-2 pr-3">
                     {user.isAdmin ? <Badge>Admin</Badge> : <Badge variant="secondary">User</Badge>}
                   </td>
@@ -177,16 +197,13 @@ export const AdminPanel = () => {
               <div key={f.id} className="rounded-lg border border-border bg-muted/30 p-4">
                 <div className="flex items-start justify-between gap-3 mb-2">
                   <div>
-                    <p className="font-medium">{f.userDisplayName} <span className="text-xs text-muted-foreground">({f.userEmail})</span></p>
+                    <p className="font-medium">
+                      {users.find(u => u.id === f.userId)?.displayName ?? 'Unknown user'}
+                      {f.category && <span className="ml-2 text-xs text-muted-foreground">[{f.category}]</span>}
+                    </p>
                     <p className="text-xs text-muted-foreground">{formatDateTime(f.createdAt)}</p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Badge variant={f.status === 'resolved' ? 'secondary' : 'default'}>{f.status}</Badge>
-                    {f.status !== 'resolved' && (
-                      <Button size="sm" variant="outline" onClick={() => setStatus(f.id, 'resolved')}>
-                        <Check className="h-3 w-3" /> Resolve
-                      </Button>
-                    )}
                     <Button size="sm" variant="ghost" onClick={() => remove(f.id)}>
                       <Trash2 className="h-3 w-3 text-destructive" />
                     </Button>
