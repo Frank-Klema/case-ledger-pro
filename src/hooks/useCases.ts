@@ -10,6 +10,9 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { LegalCase, CaseFormData, CaseLog } from '@/types/case';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import type { Json } from '@/integrations/supabase/types';
+
+const toJson = (c: LegalCase): Json => JSON.parse(JSON.stringify(c)) as Json;
 
 type CaseRow = {
   id: string;
@@ -99,8 +102,7 @@ export const useCases = () => {
     };
     setAllCases(prev => [newCase, ...prev]);
     supabase.from('cases').insert({
-      id, user_id: user.id, data: newCase as unknown as Record<string, unknown>,
-      ...mirrorCols(newCase),
+      id, user_id: user.id, data: toJson(newCase), ...mirrorCols(newCase),
     }).then(({ error }) => { if (error) console.error('addCase failed:', error); });
     return newCase;
   }, [user]);
@@ -111,7 +113,7 @@ export const useCases = () => {
       const target = updated.find(c => c.id === id);
       if (target) {
         supabase.from('cases').update({
-          data: target as unknown as Record<string, unknown>, ...mirrorCols(target),
+          data: toJson(target), ...mirrorCols(target),
         }).eq('id', id).then(({ error }) => { if (error) console.error('updateCase failed:', error); });
       }
       return updated;
@@ -165,7 +167,7 @@ export const useCases = () => {
     }));
     setAllCases(prev => [...newCases, ...prev]);
     const payload = newCases.map(c => ({
-      id: c.id, user_id: user.id, data: c as unknown as Record<string, unknown>, ...mirrorCols(c),
+      id: c.id, user_id: user.id, data: toJson(c), ...mirrorCols(c),
     }));
     supabase.from('cases').insert(payload)
       .then(({ error }) => { if (error) console.error('importCases failed:', error); });
@@ -188,7 +190,7 @@ export const useCases = () => {
       const target = updated.find(c => c.id === id);
       if (target) {
         supabase.from('cases').update({
-          data: target as unknown as Record<string, unknown>, ...mirrorCols(target),
+          data: toJson(target), ...mirrorCols(target),
         }).eq('id', id).then(({ error }) => { if (error) console.error('addCaseLog failed:', error); });
       }
       return updated;
@@ -200,7 +202,7 @@ export const useCases = () => {
       const updated = prev.map(c => c.id === id ? { ...c, isArchived, updatedAt: new Date().toISOString() } : c);
       const target = updated.find(c => c.id === id);
       if (target) {
-        supabase.from('cases').update({ data: target as unknown as Record<string, unknown>, is_archived: isArchived })
+        supabase.from('cases').update({ data: toJson(target), is_archived: isArchived })
           .eq('id', id).then(({ error }) => { if (error) console.error('archive failed:', error); });
       }
       return updated;
